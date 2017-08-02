@@ -1,0 +1,15 @@
+body {
+    margin: 0;
+}
+
+.lowerInRow {
+    margin-top:25px;
+}
+
+.muchLowerInRow {
+    margin-top:50px;
+}
+/* canvas { */
+/*     width: 100%; */
+/*     height: 100%; */
+/* } */

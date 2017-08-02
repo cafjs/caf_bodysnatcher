@@ -1,0 +1,34 @@
+{
+    "name": "caf_bodysnatcher",
+    "description": "Cloud Assistants with React basic example",
+    "version": "0.2.20",
+    "author": "Antonio Lain <antlai@cafjs.com>",
+    "dependencies": {
+      "caf_react" :"^0.2.0",
+      "caf_core": "^0.2.0",
+      "caf_transport" : "^0.2.0",
+      "caf_cli": "^0.2.0",
+      "caf_iot": "^0.2.0",
+      "three": "^0.86.0",
+      "react" : "^0.14.0",
+      "react-dom" : "^0.14.0",
+      "react-bootstrap" : "^0.28.1",
+      "redux": "^3.5.0",
+      "keymirror": "^0.1.0",
+      "object-assign" : "^4.1.0"
+    },
+    "devDependencies": {
+        "caf_dcinabox" :"^0.2.0",
+        "caf_srp" : "^0.2.0",
+        "nodeunit" : ">=0.9",
+        "browserify" : "^13.0.0",
+        "uglify-js" : "^2.4.0"
+    },
+    "scripts": {
+       "start" : "node ./index.js",
+        "test": "node ./node_modules/.bin/nodeunit",
+        "build": "./bin/build.sh"
+    },
+    "main": "index",
+    "engines": { "node": ">= 0.10.29" }
+}

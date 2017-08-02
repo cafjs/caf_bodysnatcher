@@ -1,0 +1,58 @@
+{
+    "name": "top",
+    "env" : {
+        "myId" : "process.env.MY_ID||foo-ca",
+        "appProtocol" : "process.env.APP_PROTOCOL||https",
+        "appPublisher" : "process.env.APP_PUBLISHER||root",
+        "appLocalName" : "process.env.APP_LOCAL_NAME||bodysnatcher",
+        "appSuffix" : "process.env.APP_SUFFIX||cafjs.com",
+        "interval": "process.env.INTERVAL||1000"
+    },
+    "components": [
+        {
+            "name": "iot",
+            "components": [
+                {
+                    "name": "log",
+                    "env" : {
+                        "logLevel" : "DEBUG"
+                    }
+                },
+                {
+                    "module": "caf_iot_http#plug_iot",
+                    "name": "http",
+                    "description": "Access external http services.",
+                    "env" : {
+                        "maxRetries" : "$._.env.maxRetries",
+                        "retryDelay" : "$._.env.retryDelay",
+                        "cloudSync" : "process.env.CLOUD_SYNC||true"
+                    },
+                    "components" : [
+                        {
+                            "module": "caf_iot_http#proxy_iot",
+                            "name": "proxy",
+                            "description": "Proxy to access external http services",
+                            "env" : {
+
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "handler",
+                    "components" : [
+                        {
+                            "name": "props",
+                            "description": "Exposes read-only properties to app methods",
+                            "env" : {
+                                "baseURL" : "process.env.TARGET_URL||http://172.17.0.1:7090",
+                                "calibrationOptions" : "process.env.CALIBRATION_PTIONS||null",
+                                "partsOptions" : "process.env.PARTS_OPTIONS||null"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

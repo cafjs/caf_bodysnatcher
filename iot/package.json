@@ -1,0 +1,16 @@
+{
+    "name": "caf_iot_helloiot",
+    "description": "Cloud Assistants VR/AR example (Device)",
+    "version": "0.2.1",
+    "author": "Antonio Lain <antlai@cafjs.com>",
+    "dependencies": {
+        "caf_iot" : "^0.2.0",
+        "caf_iot_http" : "^0.2.0"
+    },
+    "scripts": {
+        "start" : "node ./index.js",
+        "build": "echo done"
+    },
+    "main": "index",
+    "engines": { "node": ">= 0.10.29" }
+}
