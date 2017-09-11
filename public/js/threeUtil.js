@@ -18,7 +18,12 @@ var IMAGE_WIDTH = 1280.0;
 var IMAGE_HEIGHT = 720.0;
 var FAR_PLANE= 1000;
 var NEAR_PLANE= 0.01;
-var DEFAULT_THROW_RATIO=0.47;
+var DEFAULT_THROW_RATIO=1.47;
+var ABSOLUTE_PART = -1;
+
+// total diameter is 2*(TORUS_RADIOUS+TORUS_TUBE_DIAMETER)
+var TORUS_RADIUS = 0.025; // in meters
+var TORUS_TUBE_DIAMETER= 0.015;
 
 exports.init = function(ctx, data) {
 
@@ -35,13 +40,17 @@ exports.init = function(ctx, data) {
                                              NEAR_PLANE, FAR_PLANE );
 
     var updateCalibration = function(calib) {
-        for (var i = 0; i < 16; i++) {
-            // calib.view(proj)Mat is column-order
-            camera.projectionMatrix.elements[i] = calib.projMat[i];
-            camera.matrixWorldInverse.elements[i] = calib.viewMat[i];
+        if (calib.projMat && calib.viewMat) {
+            for (var i = 0; i < 16; i++) {
+                // calib.view(proj)Mat is column-order
+                camera.projectionMatrix.elements[i] = calib.projMat[i];
+                camera.matrixWorldInverse.elements[i] = calib.viewMat[i];
+            }
+            camera.matrixWorld.getInverse(camera.matrixWorldInverse);
+            camera.matrixAutoUpdate = false;
+        } else {
+            console.log('Missing calibration data in update');
         }
-        camera.matrixWorld.getInverse(camera.matrixWorldInverse);
-        camera.matrixAutoUpdate = false;
     };
 
     var light = new THREE.DirectionalLight(0xFFFFFF, 1.5);
@@ -50,7 +59,8 @@ exports.init = function(ctx, data) {
     scene.add(light2);
 
     var newDonut = function(name, spinning, color, location) {
-        var geometry = new THREE.TorusGeometry(0.05, 0.02, 16, 64);
+        var geometry = new THREE.TorusGeometry(TORUS_RADIUS,
+                                               TORUS_TUBE_DIAMETER, 16, 64);
         var material = new THREE.MeshLambertMaterial({ color: color });
         var donut =  new THREE.Mesh(geometry, material);
         donut['__meta__'] = {name: name, spinning: spinning, color:color,
@@ -94,6 +104,14 @@ exports.init = function(ctx, data) {
                     var y = parts[loc.part][1] + loc.offset[1];
                     var z = parts[loc.part][2] + loc.offset[2];
                     obj.position.set(x, y, z);
+                    if (!obj.__meta__.spinning) {
+                        obj.rotation.y = 0.0;
+                    }
+                    obj.visible = true;
+                } else if (loc.part === ABSOLUTE_PART) {
+                    obj.__meta__.missing = 0;
+                    obj.position.set(loc.offset[0], loc.offset[1],
+                                     loc.offset[2]);
                     if (!obj.__meta__.spinning) {
                         obj.rotation.y = 0.0;
                     }
@@ -144,7 +162,7 @@ exports.init = function(ctx, data) {
                 checkerboard.setAttribute('style', 'display: none;');
                 state.calibration && updateCalibration(state.calibration);
                 state.markers && syncDonuts(state.markers);
-                state.parts && updatePosition(state.parts);
+                updatePosition(state.parts || {});
             }
         }
     };
