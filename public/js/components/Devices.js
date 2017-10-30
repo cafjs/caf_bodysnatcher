@@ -13,6 +13,14 @@ var VALID_COLORS = {
     'white': true
 };
 
+var pickMenu =  function() {
+    return Object.keys(mapHuman.partToId).map(function(x, i) {
+        return cE(rB.MenuItem, {eventKey: mapHuman.partToId[x], key: 343*i +i},
+                  x);
+    });
+};
+
+
 var Devices = {
 
      handleName : function() {
@@ -42,7 +50,8 @@ var Devices = {
             var err = new Error('Invalid Color: pick one from ' +
                                 JSON.stringify(Object.keys(VALID_COLORS)));
              AppActions.setError(this.props.ctx, err);
-        } else if (typeof mapHuman.partToId[this.props.localDevices.part] !== 'number') {
+        } else if (typeof mapHuman.partToId[this.props.localDevices.part] !==
+                   'number') {
             err = new Error('Invalid Part: pick one from ' +
                             JSON.stringify(Object.keys(mapHuman.partToId)));
             AppActions.setError(this.props.ctx, err);
@@ -68,6 +77,13 @@ var Devices = {
         }
     },
 
+    pickSelect: function(event, eventKey) {
+        var dev = objectAssign({}, this.props.localDevices, {
+            part: mapHuman.idToPart[eventKey]
+        });
+        AppActions.setLocalState(this.props.ctx, {localDevices: dev});
+    },
+
     render: function() {
         return cE(rB.Grid, {fluid: true},
                   cE(rB.Row, null,
@@ -79,7 +95,7 @@ var Devices = {
                             value: this.props.localDevices.name,
                             onChange: this.handleName
                         })),
-                     cE(rB.Col, {xs:4, sm:3},
+                     cE(rB.Col, {xs:4, sm:2},
                         cE(rB.Input, {
                             label: 'Part',
                             type: 'text',
@@ -87,6 +103,12 @@ var Devices = {
                             value: this.props.localDevices.part,
                             onChange: this.handlePart
                         })),
+                     cE(rB.Col, {xs:4, sm:1},
+                        cE(rB.DropdownButton, {title: 'Pick',
+                                               className: 'lowerInRow',
+                                               id: 'dropdown-pick',
+                                               onSelect: this.pickSelect},
+                           pickMenu())),
                      cE(rB.Col, {xs:4, sm:2},
                         cE(rB.Input, {
                             label: 'Color',
