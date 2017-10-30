@@ -88,7 +88,10 @@ var MyApp = {
                                cE(rB.Col,{sm:6, xs:6},
                                   cE(DisplayDevices, {
                                       ctx: this.props.ctx,
-                                      devices: this.state.markers
+                                      devices: this.state.markers,
+                                      deviceInfo: this.state.deviceInfo,
+                                      deviceSelected: this.state.deviceSelected,
+                                      overlayTarget: this.state.overlayTarget
                                   })),
                                cE(rB.Col,{sm:6, xs:6},
                                   cE(Parts, {

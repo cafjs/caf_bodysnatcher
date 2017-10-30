@@ -9,7 +9,8 @@ var VALID_COLORS = {
     'red': true,
     'yellow': true,
     'green': true,
-    'blue': true
+    'blue': true,
+    'white': true
 };
 
 var Devices = {

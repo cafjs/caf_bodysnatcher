@@ -17,6 +17,8 @@ limitations under the License.
 "use strict";
 var caf_iot = require('caf_iot');
 var myUtils = caf_iot.caf_components.myUtils;
+var json_rpc = caf_iot.caf_transport.json_rpc;
+var iot_methods_ble = require('./iot_methods_ble');
 
 var startPartsStream = function(self) {
     if (self.state.streamON && (self.state.streamID === null)) {
@@ -38,11 +40,22 @@ var stopPartsStream = function(self) {
     }
 };
 
-exports.methods = {
+var isManagerBLE = function(self) {
+    // Ignore owner
+    var name = json_rpc.splitName(self.__ca_getName__())[1];
+    return (name === self.$.props.managerBLE);
+};
+
+var methods = exports.methods = {
     '__iot_setup__' : function(cb) {
-        this.state.streamID = null;
-        this.state.lastParts = null;
-        cb(null);
+        if (isManagerBLE(this)) {
+            iot_methods_ble.setup(this, cb);
+        } else {
+            // projector
+            this.state.streamID = null;
+            this.state.lastParts = null;
+            cb(null);
+        }
     },
 
     '__iot_loop__' : function(cb) {
@@ -51,21 +64,24 @@ exports.methods = {
         this.$.log && this.$.log.debug('Time offset ' +
                                        (this.$.cloud.cli && this.$.cloud.cli
                                         .getEstimatedTimeOffset()));
-
-        this.state.streamON = this.fromCloud.get('streamON');
-        if (this.state.streamON) {
-            startPartsStream(this);
+        if (isManagerBLE(this)) {
+            iot_methods_ble.loop(this, cb);
         } else {
-            stopPartsStream(this);
+            this.state.streamON = this.fromCloud.get('streamON');
+            if (this.state.streamON) {
+                startPartsStream(this);
+            } else {
+                stopPartsStream(this);
+            }
+            var parts = this.toCloud.get('parts');
+            if (myUtils.deepEqual(parts, this.state.lastParts)) {
+                this.toCloud.set('parts', {});
+                this.state.lastParts =  {};
+            } else {
+                this.state.lastParts = parts;
+            }
+            cb(null);
         }
-        var parts = this.toCloud.get('parts');
-        if (myUtils.deepEqual(parts, this.state.lastParts)) {
-            this.toCloud.set('parts', {});
-            this.state.lastParts =  {};
-        } else {
-            this.state.lastParts = parts;
-        }
-        cb(null);
     },
 
     calibrate: function(cb) {
@@ -110,3 +126,5 @@ exports.methods = {
     }
 
 };
+
+myUtils.mixin(methods, iot_methods_ble.methods);

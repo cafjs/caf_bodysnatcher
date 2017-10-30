@@ -15,7 +15,7 @@
                 {
                     "name": "log",
                     "env" : {
-                        "logLevel" : "DEBUG"
+                        "logLevel" : "TRACE"
                     }
                 },
                 {
@@ -39,15 +39,36 @@
                     ]
                 },
                 {
+                    "module": "caf_iot_gatt#plug_iot",
+                    "name": "gatt",
+                    "description": "Access to GATT services.",
+                    "env" : {
+                        "maxRetries" : "$._.env.maxRetries",
+                        "retryDelay" : "$._.env.retryDelay"
+                    },
+                    "components" : [
+                        {
+                            "module": "caf_iot_gatt#proxy_iot",
+                            "name": "proxy",
+                            "description": "Proxy to access GATT services",
+                            "env" : {
+                            }
+                        }
+                    ]
+                },
+                {
                     "name": "handler",
                     "components" : [
                         {
                             "name": "props",
                             "description": "Exposes read-only properties to app methods",
                             "env" : {
-                                "baseURL" : "process.env.TARGET_URL||http://172.17.0.1:7090",
-                                "calibrationOptions" : "process.env.CALIBRATION_PTIONS||null",
-                                "partsOptions" : "process.env.PARTS_OPTIONS||null"
+                                "baseURL": "process.env.TARGET_URL||http://172.17.0.1:7090",
+                                "calibrationOptions": "process.env.CALIBRATION_PTIONS||null",
+                                "partsOptions": "process.env.PARTS_OPTIONS||null",
+                                "managerBLE": "process.env.MANAGER_BLE||admin",
+                                "gattServiceID" : "process.env.GATT_SERVICE_ID||bcde",
+                                "gattCharactID" : "process.env.GATT_CHARACT_ID||abcd"
                             }
                         }
                     ]
