@@ -8,6 +8,7 @@ var Devices = require('./Devices');
 var Manage = require('./Manage');
 var Parts = require('./Parts');
 var DisplayCalibration = require('./DisplayCalibration');
+var DisplaySnapshot = require('./DisplaySnapshot');
 var DisplayDevices = require('./DisplayDevices');
 
 var cE = React.createElement;
@@ -44,6 +45,11 @@ var MyApp = {
                       ctx: this.props.ctx,
                       calibration: this.state.calibration,
                       showCalibration: this.state.showCalibration
+                  }),
+                  cE(DisplaySnapshot, {
+                      ctx: this.props.ctx,
+                      snapshot: this.state.snapshot,
+                      showSnapshot: this.state.showSnapshot
                   }),
                   cE(rB.Panel, {
                       header: cE(rB.Grid, {fluid: true},

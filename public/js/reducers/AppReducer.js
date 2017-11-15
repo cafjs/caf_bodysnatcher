@@ -8,6 +8,7 @@ var AppReducer = function(state, action) {
                  calibrating: false, showCalibration: false, localProjector: '',
                  projectorCA: '', isAdmin: false, isClosed: false,
                  deviceSelected: null, overlayTarget: null,
+                 showSnapshot: false, snapshot: null,
                  localDevices: {}};
     } else {
         switch(action.type) {

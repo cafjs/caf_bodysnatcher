@@ -75,7 +75,7 @@ var AppActions = {
 };
 
 ['setMarker', 'deleteMarker', 'calibrate', 'activatePartsStream',
- 'setProjectorCA', 'getState'].forEach(function(x) {
+ 'setProjectorCA', 'getSnapshot', 'snapshot', 'getState'].forEach(function(x) {
      AppActions[x] = function() {
          var args = Array.prototype.slice.call(arguments);
          var ctx = args.shift();

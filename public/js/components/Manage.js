@@ -15,6 +15,11 @@ var Manage = {
         AppActions.calibrate(this.props.ctx);
     },
 
+    doSnapshot: function() {
+        AppActions.snapshot(this.props.ctx);
+        AppActions.setLocalState(this.props.ctx, {showSnapshot: true});
+    },
+
     doShowCalibration: function() {
         AppActions.setLocalState(this.props.ctx, {showCalibration: true});
     },
@@ -38,7 +43,7 @@ var Manage = {
     render: function() {
         return  cE(rB.Grid, {fluid: true},
                    cE(rB.Row, null,
-                      cE(rB.Col, {sm:4, xs:6},
+                      cE(rB.Col, {sm:3, xs:6},
                         cE(rB.Input, {
                             label: 'Projector Name',
                             type: 'text',
@@ -54,9 +59,9 @@ var Manage = {
                         }, "Update")
                        ),
 
-                     cE(rB.Col, {sm:2, xs:2},
+                     cE(rB.Col, {sm:1, xs:2},
                         cE(rB.Input, {
-                            className: 'muchLowerInRow',
+                            className: 'lowerInRow',
                             label: 'Streaming',
                             type: 'checkbox',
                             ref: 'stream',
@@ -68,20 +73,25 @@ var Manage = {
                      cE(rB.Col, {sm:2, xs:6},
                         cE(rB.Button, {
                             className: 'lowerInRow',
-                            bsStyle: (this.props.calibrating ? 'danger' :
-                                      'primary'),
-                            onClick: this.doCalibrate
-                        }, "Calibrate")
+                            bsStyle: 'primary',
+                            onClick: this.doSnapshot
+                        }, "Snapshot")
                        ),
-                     cE(rB.Col, {sm:2, xs:6},
-                        cE(rB.Button, {
-                            className: 'lowerInRow',
-                            bsStyle: (this.props.calibrating ? 'danger' :
-                                      'primary'),
-                            onClick: this.doShowCalibration
-                        }, "Show Calibration")
-                       )
-                    )
+                      cE(rB.Col, {sm:4, xs:6},
+                         cE(rB.ButtonGroup, {className: 'lowerInRow'},
+                            cE(rB.Button, {
+                                bsStyle: (this.props.calibrating ? 'danger' :
+                                          'primary'),
+                                onClick: this.doCalibrate
+                            }, "Calibrate"),
+                            cE(rB.Button, {
+                                bsStyle: (this.props.calibrating ? 'danger' :
+                                          'info'),
+                                onClick: this.doShowCalibration
+                            }, "Show Calibration")
+                           )
+                        )
+                     )
                   );
     }
 };

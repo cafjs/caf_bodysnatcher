@@ -64,7 +64,8 @@
                             "description": "Exposes read-only properties to app methods",
                             "env" : {
                                 "baseURL": "process.env.TARGET_URL||http://172.17.0.1:7090",
-                                "calibrationOptions": "process.env.CALIBRATION_PTIONS||null",
+                                "calibrationOptions": "process.env.CALIBRATION_OPTIONS||null",
+                                "snapshotOptions": "process.env.SNAPSHOT_OPTIONS||null",
                                 "partsOptions": "process.env.PARTS_OPTIONS||null",
                                 "managerBLE": "process.env.MANAGER_BLE||admin",
                                 "gattServiceID" : "process.env.GATT_SERVICE_ID||bcde",

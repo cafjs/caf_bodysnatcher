@@ -110,6 +110,28 @@ var methods = exports.methods = {
 
     },
 
+    snapshot: function(cb) {
+        var self = this;
+        var snapURL = this.$.props.baseURL + '/snapshot';
+        var snapOptions = this.$.props.snapshotOptions;
+        stopPartsStream(this);
+        setTimeout(function() {
+            self.$.http.dirtyCall(snapURL, snapOptions, function(err, value) {
+                if (err) {
+                    cb(err);
+                } else {
+                    /*`value` type is {width: number, height:number,
+                                     data: string }
+                     */
+                    value.timestamp = (new Date()).getTime();
+                    self.toCloud.set('snapshot', value);
+                    startPartsStream(self);
+                    cb(null);
+                }
+            });
+        }, 1000); // time to reset the parts service after stop
+    },
+
     '__iot_handleParts__': function(parts, cb) {
         // Assumes cloudSync is enabled, and `toCloud` changes are propagated
         //  right away, and without blocking the main loop.
