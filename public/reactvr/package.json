@@ -1,0 +1,25 @@
+{
+  "name": "bodysnatcherVR",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node -e \"console.log('open browser at http://localhost:8081/vr/\\n\\n');\" && node node_modules/react-native/local-cli/cli.js start",
+    "bundle": "node node_modules/react-vr/scripts/bundle.js && cp vr/build/*.js ."
+  },
+    "dependencies": {
+        "caf_cli": "^0.2.41",
+        "caf_transport": "^0.2.0",
+        "node-libs-browser": "^2.1.0",
+        "ovrui": "~2.0.0",
+        "react": "16.0.0",
+        "redux" : "^3.5.0",
+        "keymirror": "^0.1.0",
+        "react-native": "~0.48.0",
+        "react-vr": "~2.0.0",
+        "react-vr-controller-raycaster": "git+https://github.com/antlai/react-vr-controller-raycaster-newbeam.git",
+        "react-vr-web": "~2.0.0",
+        "three": "^0.88.0"
+    },
+  "devDependencies": {
+  }
+}

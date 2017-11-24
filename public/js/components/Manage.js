@@ -3,6 +3,7 @@ var rB = require('react-bootstrap');
 var cE = React.createElement;
 var AppActions = require('../actions/AppActions');
 var objectAssign = require('object-assign');
+var urlParser = require('url');
 
 var Manage = {
 
@@ -22,6 +23,16 @@ var Manage = {
 
     doShowCalibration: function() {
         AppActions.setLocalState(this.props.ctx, {showCalibration: true});
+    },
+
+    doVR: function() {
+        if (window && window.location && window.location.href) {
+            var myURL = urlParser.parse(window.location.href);
+            myURL.pathname = '/reactvr/index.html';
+            myURL.hash = myURL.hash.replace('session=default', 'session=vr');
+            delete myURL.search; // delete cacheKey
+            window.open(urlParser.format(myURL), '_blank');
+        }
     },
 
     handleProjectorName: function() {
@@ -70,25 +81,26 @@ var Manage = {
                             //onClick: this.handleStream
                         })
                        ),
-                     cE(rB.Col, {sm:2, xs:6},
-                        cE(rB.Button, {
-                            className: 'lowerInRow',
-                            bsStyle: 'primary',
-                            onClick: this.doSnapshot
-                        }, "Snapshot")
-                       ),
-                      cE(rB.Col, {sm:4, xs:6},
+                      cE(rB.Col, {sm:6, xs:6},
                          cE(rB.ButtonGroup, {className: 'lowerInRow'},
                             cE(rB.Button, {
+                                bsStyle: 'primary',
+                                onClick: this.doSnapshot
+                            }, "Snapshot"),
+                            cE(rB.Button, {
                                 bsStyle: (this.props.calibrating ? 'danger' :
-                                          'primary'),
+                                          'info'),
                                 onClick: this.doCalibrate
                             }, "Calibrate"),
                             cE(rB.Button, {
                                 bsStyle: (this.props.calibrating ? 'danger' :
-                                          'info'),
+                                          'primary'),
                                 onClick: this.doShowCalibration
-                            }, "Show Calibration")
+                            }, "Show Calibration"),
+                            cE(rB.Button, {
+                                bsStyle: 'info',
+                                onClick: this.doVR
+                            }, "Show VR")
                            )
                         )
                      )

@@ -7,3 +7,9 @@ build-iot.js
 build-iot.min.js
 *.tgz
 npm-shrinkwrap.json
+build
+index.bundle.js*
+client.bundle.js*
+.flowconfig
+.watchmanconfig
+yarn.lock

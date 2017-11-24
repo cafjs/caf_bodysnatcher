@@ -17,3 +17,9 @@ npm install --production
 npm shrinkwrap
 npm pack
 cp *.tgz ../public/iot.tgz
+popd
+
+#build vr
+pushd public/reactvr
+yarn install --check-files --production
+npm run bundle

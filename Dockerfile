@@ -5,7 +5,7 @@
 # TO_BUILD:       docker build --rm -t registry.cafjs.com:32000/root-bodysnatcher .
 # TO_RUN:         docker run -p <app_port>:3000 -e DOCKER_APP_INTERNAL_PORT=3000 -e PORT0=<app_port> -e HOST=<host_ip> -e REDIS_PORT_6379_TCP_PORT=<redis_port>   registry.cafjs.com:32000/root-bodysnatcher
 
-FROM node:4.3
+FROM node:4.8
 
 EXPOSE 3000
 
