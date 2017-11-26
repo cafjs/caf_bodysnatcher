@@ -8,7 +8,7 @@ Ks 0.3 0.3 0.3
 Ke 0 0 0
 Ns 20
 illum 2
-map_Kd textures\groundtruth-final.png
+map_Kd textures\groundtruth-final.jpg
 
 newmtl short02
 Kd 1 1 1
@@ -17,7 +17,7 @@ Ks 0.0509804 0.0509804 0.0509804
 Ke 0 0 0
 Ns 20
 illum 2
-map_Kd textures\short02_diffuse.png
+map_Kd textures\short02_diffuse.jpg
 
 newmtl high-poly
 Kd 1 1 1
@@ -26,7 +26,7 @@ Ks 1 1 1
 Ke 0 0 0
 Ns 20
 illum 2
-map_Kd textures\brown_eye.png
+map_Kd textures\brown_eye.jpg
 
 newmtl male_elegantsuit01
 Kd 1 1 1
@@ -35,5 +35,4 @@ Ks 0.0352941 0.0352941 0.0352941
 Ke 0 0 0
 Ns 20
 illum 2
-map_Kd textures\male_elegantsuit01_diffuse.png
-
+#map_Kd textures\male_elegantsuit01_diffuse.png
