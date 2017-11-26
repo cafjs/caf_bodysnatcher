@@ -9,18 +9,26 @@ const DEVICES = exports.DEVICES = {
     },
     red: {
         color: 'red',
-        type: 'temp'
-    },
-    yellow: {
-        color: 'yellow',
-        type: 'light'
+        type: 'temp',
+        unit: 'C',
+        fontColor: 'white'
     },
     white: {
         color: 'white',
-        type: 'counter'
+        type: 'light',
+        unit: '%',
+        fontColor: 'black'
+    },
+    yellow: {
+        color: 'yellow',
+        type: 'count',
+        unit: '',
+        fontColor: 'black'
     },
     green: {
         color: 'green',
-        type: 'battery'
+        type: 'battery',
+        unit: '%',
+        fontColor: 'white'
     }
 };

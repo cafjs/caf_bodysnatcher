@@ -23,7 +23,8 @@ class Button extends React.Component {
             text : {
                 fontSize: 40,//0.3,
                 textAlign: 'center',
-                textAlignVertical: 'center'
+                textAlignVertical: 'center',
+                color: self.props.fontColor || 'white'
             }
         });
     }

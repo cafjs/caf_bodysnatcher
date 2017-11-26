@@ -10,6 +10,7 @@ var allDevices = function(ctx) {
     return Object.keys(DEVICES).sort().map((x, i) =>  cE(Button, {
         key: 9232*i,
         text: x,
+        fontColor: DEVICES[x].fontColor,
         backgroundColor: DEVICES[x].color,
         callback: () => AppActions.setLocalState(ctx, {selectedDevice: x})
     }));

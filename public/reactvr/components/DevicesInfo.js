@@ -4,7 +4,15 @@ var cE = React.createElement;
 var Button = require('./Button');
 var AppActions = require('../actions/AppActions');
 const DEVICES = require('./devices').DEVICES;
+const PENDING = '???';
 
+var formatNumber = function(x) {
+    if (x === PENDING) {
+        return x;
+    } else {
+        return ((!x || Number.isInteger(x)) ? x : (Math.floor(x*100)/100));
+    }
+};
 
 var allData = function(ctx, deviceInfo, markers) {
     var all = Object.keys(deviceInfo)
@@ -12,16 +20,22 @@ var allData = function(ctx, deviceInfo, markers) {
                     deviceInfo[x].advertisement.serviceData &&
                     markers[x])
             .sort();
-    return all.map((x, i) => cE(rVR.Text, {key: 923127*i, style: {
-        margin: 10,
-        fontSize: 40,
-        fontWeight: '300',
-        textAlign: 'center',
-        textAlignVertical: 'center',
-        borderRadius: 0,
-        opacity: 1,
-        backgroundColor: DEVICES[x].color
-    }}, DEVICES[x].type + ': ' + deviceInfo[x].advertisement.serviceData));
+    return all.map(function(x, i) {
+        var data = deviceInfo[x].advertisement.serviceData;
+        data = (data[0] && data[0].data && data[0].data[0]);
+        data = (!data && (typeof data !== 'number') ? PENDING : data);
+        return cE(rVR.Text, {key: 923127*i, style: {
+            margin: 10,
+            fontSize: 40,
+            fontWeight: '300',
+            textAlign: 'center',
+            textAlignVertical: 'center',
+            borderRadius: 0,
+            opacity: 1,
+            backgroundColor: DEVICES[x].color,
+            color: DEVICES[x].fontColor
+        }}, DEVICES[x].type + ': ' + formatNumber(data) +  DEVICES[x].unit);
+    });
 };
 
 class DevicesInfo extends React.Component {
