@@ -7,9 +7,14 @@ var urlParser = require('url');
 
 var Manage = {
 
-    handleStream : function() {
+    handleStream: function() {
         var streamON =  this.refs.stream.getChecked();
         AppActions.activatePartsStream(this.props.ctx, streamON);
+    },
+
+    handleChessBoard: function() {
+        var chessboard =  this.refs.chessboard.getChecked();
+        AppActions.showChess(this.props.ctx, chessboard);
     },
 
     doCalibrate: function() {
@@ -63,25 +68,32 @@ var Manage = {
                             onChange: this.handleProjectorName
                         })
                         ),
-                      cE(rB.Col, {sm:2, xs:4},
+                      cE(rB.Col, {sm:2, xs:6},
                          cE(rB.Button, {
                              className: 'lowerInRow',
                             onClick: this.doProjectorName
                         }, "Update")
                        ),
 
-                     cE(rB.Col, {sm:1, xs:2},
+                     cE(rB.Col, {sm:2, xs:2},
                         cE(rB.Input, {
-                            className: 'lowerInRow',
                             label: 'Streaming',
                             type: 'checkbox',
                             ref: 'stream',
                             checked: this.props.streamON,
                             onChange: this.handleStream
-                            //onClick: this.handleStream
                         })
                        ),
-                      cE(rB.Col, {sm:6, xs:6},
+                       cE(rB.Col, {sm:2, xs:2},
+                        cE(rB.Input, {
+                            label: 'ChessBoard',
+                            type: 'checkbox',
+                            ref: 'chessboard',
+                            checked: this.props.calibrating,
+                            onChange: this.handleChessBoard
+                        })
+                       ),
+                      cE(rB.Col, {sm:6, xs:12},
                          cE(rB.ButtonGroup, {className: 'lowerInRow'},
                             cE(rB.Button, {
                                 bsStyle: 'primary',
