@@ -71,11 +71,15 @@ var AppActions = {
     },
     setError: function(ctx, err) {
         errorF(ctx.store, err);
+    },
+    arTouched: function(ctx, touched) {
+        updateF(ctx.store, {touched: touched});
+        touched && AppActions.sayHi(ctx, touched.__meta__.name);
     }
 };
 
-['setMarker', 'deleteMarker', 'calibrate', 'showChess', 'activatePartsStream',
- 'setProjectorCA', 'getSnapshot', 'snapshot', 'getState'].forEach(function(x) {
+
+['sayHi','getState'].forEach(function(x) {
      AppActions[x] = function() {
          var args = Array.prototype.slice.call(arguments);
          var ctx = args.shift();

@@ -10,6 +10,7 @@ var COLORS= {
 };
 
 var CHECKERBOARD_ID = 'checkerboard';
+var BLACK_ID = 'black';
 
 var MAX_CHANCES = 2;
 
@@ -152,13 +153,22 @@ exports.init = function(ctx, data) {
         update: function() {
             var checkerboard = document &&
                     document.getElementById(CHECKERBOARD_ID);
-            if (state.calibrating) {
+            var black = document &&
+                    document.getElementById(BLACK_ID);
+            if (state.nodisplay) {
                 scene.visible = false;
                 renderer.domElement.setAttribute('style', 'display: none;');
+                checkerboard.setAttribute('style', 'display: none;');
+                black.setAttribute('style', 'display: inline;');
+            } else  if (state.calibrating) {
+                scene.visible = false;
+                renderer.domElement.setAttribute('style', 'display: none;');
+                black.setAttribute('style', 'display: none;');
                 checkerboard.setAttribute('style', 'display: inline;');
             } else {
                 scene.visible = true;
                 renderer.domElement.setAttribute('style', 'display: inline;');
+                black.setAttribute('style', 'display: none;');
                 checkerboard.setAttribute('style', 'display: none;');
                 state.calibration && updateCalibration(state.calibration);
                 state.markers && syncDonuts(state.markers);

@@ -3,7 +3,8 @@ var AppActions = require('../actions/AppActions');
 
 exports.connect = function(ctx, cb) {
 
-    var session = new cli.Session(window.location.href);
+    var session = new cli.Session(window.location.href, null,
+                                  {timeoutMsec: 60000});
 
     session.onopen = function() {
         console.log('open session');

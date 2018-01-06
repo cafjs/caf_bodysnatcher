@@ -23,3 +23,10 @@ popd
 pushd public/reactvr
 yarn install --check-files --production
 npm run bundle
+popd
+
+#build wear
+pushd public/webar
+npm install
+npm run build
+popd

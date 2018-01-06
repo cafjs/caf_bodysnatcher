@@ -79,6 +79,7 @@ var MyApp = {
                             ctx: this.props.ctx,
                             calibration: this.state.calibration,
                             calibrating: this.state.calibrating,
+                            nodisplay: this.state.nodisplay,
                             localProjector: this.state.localProjector,
                             streamON: this.state.streamON
                         })),

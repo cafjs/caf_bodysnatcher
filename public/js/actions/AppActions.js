@@ -75,20 +75,21 @@ var AppActions = {
 };
 
 ['setMarker', 'deleteMarker', 'calibrate', 'showChess', 'activatePartsStream',
- 'setProjectorCA', 'getSnapshot', 'snapshot', 'getState'].forEach(function(x) {
-     AppActions[x] = function() {
-         var args = Array.prototype.slice.call(arguments);
-         var ctx = args.shift();
-         args.push(function(err, data) {
-             if (err) {
-                 errorF(ctx.store, err);
-             } else {
-                 updateF(ctx.store, data);
-             }
-         });
-         ctx.session[x].apply(ctx.session, args);
-     };
-});
+ 'setProjectorCA', 'getSnapshot', 'snapshot', 'getState', 'nodisplay']
+    .forEach(function(x) {
+        AppActions[x] = function() {
+            var args = Array.prototype.slice.call(arguments);
+            var ctx = args.shift();
+            args.push(function(err, data) {
+                if (err) {
+                    errorF(ctx.store, err);
+                } else {
+                    updateF(ctx.store, data);
+                }
+            });
+            ctx.session[x].apply(ctx.session, args);
+        };
+    });
 
 
 module.exports = AppActions;

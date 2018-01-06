@@ -148,6 +148,10 @@ exports.methods = {
         cb(null);
     },
 
+    sayHi: function(deviceName, cb) {
+        this.changeDeviceState(deviceName, 'hi', cb);
+    },
+
     changeDeviceState: function(deviceName, isStart, cb) {
         this.$.log && this.$.log.debug('Change device ' + deviceName + ' to '
                                        + isStart);
@@ -195,9 +199,14 @@ exports.methods = {
     },
 
     __iot_changeState__: function(device, charact, isStart, cb) {
-        var buf = new Buffer(isStart ? 'on' : 'off');
-        this.$.log && this.$.log.debug('New state is ' +
-                                       (isStart ? 'on' : 'off'));
+        var buf = new Buffer(typeof isStart === 'string' ? isStart :
+                             (isStart ? 'on' : 'off'));
+        if (typeof isStart === 'string') {
+            this.$.log && this.$.log.debug('Sending command ' + isStart);
+        } else {
+            this.$.log && this.$.log.debug('New state is ' +
+                                           (isStart ? 'on' : 'off'));
+        }
         this.$.gatt.write(charact, buf);
         this.$.gatt.disconnect(device, 300);
         delete device.pending;

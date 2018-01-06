@@ -43,6 +43,21 @@ var startBlinking = function() {
     }
 };
 
+var sayHi = function() {
+    LED1.write(true);
+    setTimeout(function() {
+        LED1.write(false);
+        LED2.write(true);
+        setTimeout(function() {
+            LED2.write(false);
+            LED3.write(true);
+            setTimeout(function() {
+                LED3.write(false);
+            }, 500);
+        }, 500);
+    }, 500);
+};
+
 var serviceA = function(data) {
     data = String.fromCharCode.apply(null, data);
     lastMsg = data;
@@ -53,6 +68,8 @@ var serviceA = function(data) {
     } else if (data === 'off') {
         stopBlinking();
         stopAdvertising();
+    } else if (data === 'hi') {
+        sayHi();
     } else {
         console.log('Ooops: wrong command ' + data);
     }

@@ -5,7 +5,7 @@ var AppReducer = function(state, action) {
     if (typeof state === 'undefined') {
         return  {markers: {}, loading: true, calibration: null,
                  rotation: 0, doRotate: false, lastUpdate: Date.now(),
-                 selectedDevice: null, deviceInfo: {},
+                 selectedDevice: null, deviceInfo: {}, touched: null,
                  isAdmin: false, isClosed: false
                 };
     } else {

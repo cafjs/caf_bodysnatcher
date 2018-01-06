@@ -17,6 +17,11 @@ var Manage = {
         AppActions.showChess(this.props.ctx, chessboard);
     },
 
+    handleNodisplay: function() {
+        var nodisplay =  this.refs.nodisplay.getChecked();
+        AppActions.nodisplay(this.props.ctx, nodisplay);
+    },
+
     doCalibrate: function() {
         AppActions.calibrate(this.props.ctx);
     },
@@ -40,6 +45,16 @@ var Manage = {
         }
     },
 
+     doAR: function() {
+        if (window && window.location && window.location.href) {
+            var myURL = urlParser.parse(window.location.href);
+            myURL.pathname = '/webar/index.html';
+            myURL.hash = myURL.hash.replace('session=default', 'session=ar');
+            delete myURL.search; // delete cacheKey
+            window.open(urlParser.format(myURL), '_blank');
+        }
+     },
+
     handleProjectorName: function() {
         var projectorName =  this.refs.projName.getValue();
         AppActions.setLocalState(this.props.ctx,
@@ -60,39 +75,48 @@ var Manage = {
         return  cE(rB.Grid, {fluid: true},
                    cE(rB.Row, null,
                       cE(rB.Col, {sm:3, xs:6},
-                        cE(rB.Input, {
-                            label: 'Projector Name',
-                            type: 'text',
-                            ref: 'projName',
-                            value: this.props.localProjector,
-                            onChange: this.handleProjectorName
-                        })
+                         cE(rB.Input, {
+                             label: 'Projector Name',
+                             type: 'text',
+                             ref: 'projName',
+                             value: this.props.localProjector,
+                             onChange: this.handleProjectorName
+                         })
                         ),
                       cE(rB.Col, {sm:2, xs:6},
                          cE(rB.Button, {
                              className: 'lowerInRow',
-                            onClick: this.doProjectorName
-                        }, "Update")
-                       ),
+                             onClick: this.doProjectorName
+                         }, "Update")
+                        ),
 
-                     cE(rB.Col, {sm:2, xs:2},
-                        cE(rB.Input, {
-                            label: 'Streaming',
-                            type: 'checkbox',
-                            ref: 'stream',
-                            checked: this.props.streamON,
-                            onChange: this.handleStream
-                        })
-                       ),
-                       cE(rB.Col, {sm:2, xs:2},
-                        cE(rB.Input, {
-                            label: 'ChessBoard',
-                            type: 'checkbox',
-                            ref: 'chessboard',
-                            checked: this.props.calibrating,
-                            onChange: this.handleChessBoard
-                        })
-                       ),
+                      cE(rB.Col, {sm:2, xs:2},
+                         cE(rB.Input, {
+                             label: 'Streaming',
+                             type: 'checkbox',
+                             ref: 'stream',
+                             checked: this.props.streamON,
+                             onChange: this.handleStream
+                         })
+                        ),
+                      cE(rB.Col, {sm:2, xs:2},
+                         cE(rB.Input, {
+                             label: 'ChessBoard',
+                             type: 'checkbox',
+                             ref: 'chessboard',
+                             checked: this.props.calibrating,
+                             onChange: this.handleChessBoard
+                         })
+                        ),
+                      cE(rB.Col, {sm:2, xs:2},
+                         cE(rB.Input, {
+                             label: 'No Display',
+                             type: 'checkbox',
+                             ref: 'nodisplay',
+                             checked: this.props.nodisplay,
+                             onChange: this.handleNodisplay
+                         })
+                        ),
                       cE(rB.Col, {sm:6, xs:12},
                          cE(rB.ButtonGroup, {className: 'lowerInRow'},
                             cE(rB.Button, {
@@ -112,7 +136,11 @@ var Manage = {
                             cE(rB.Button, {
                                 bsStyle: 'info',
                                 onClick: this.doVR
-                            }, "Show VR")
+                            }, "Show VR"),
+                            cE(rB.Button, {
+                                bsStyle: 'primary',
+                                onClick: this.doAR
+                            }, "Show AR")
                            )
                         )
                      )
