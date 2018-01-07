@@ -29,6 +29,7 @@ var syncDonuts = function(group, markers) {
     };
 
     var all = {};
+    var toRemove = [];
     group.traverse(function (obj) {
         if ((obj instanceof THREE.Mesh) && obj.__meta__ ) {
             var name = obj.__meta__.name;
@@ -38,10 +39,12 @@ var syncDonuts = function(group, markers) {
                 obj.__meta__.spinning = desired.spinning;
                 obj.__meta__.location = desired.location;
             } else {
-                group.remove(obj);
+                toRemove.push(obj);
             }
         }
     });
+
+    toRemove.forEach(x => group.remove(x));
 
     Object.keys(markers).forEach(function(x) {
         if (!all[x]) {
@@ -88,10 +91,12 @@ var updatePosition = function(group, parts) {
 
 var update = exports.update = function(arState, gState) {
     var group = arState.group;
-
-    gState.markers && syncDonuts(group, gState.markers);
-    updatePosition(group, gState.parts || {});
-
+    try {
+        gState.markers && group && syncDonuts(group, gState.markers);
+        group && updatePosition(group, gState.parts || {});
+    } catch(err) {
+        console.log(err);
+    }
     return arState;
 };
 
@@ -106,7 +111,7 @@ exports.process = function(arState, gState, frame) {
     var counter = arState.counter;
 
     // add  donuts to 'group' here
-    if (group.visible) {
+    if (group && group.visible) {
         group.traverse(function (obj) {
             if ((obj instanceof THREE.Mesh) && obj.__meta__  &&
                 obj.__meta__.spinning) {

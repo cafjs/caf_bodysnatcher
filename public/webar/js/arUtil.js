@@ -84,23 +84,6 @@ exports.update = function(arState, gState) {
 };
 
 
-var HACK = [ 2.1445069205095586,
-             0,
-             0,
-             0,
-             0,
-             2.945905004545787,
-             0,
-             0,
-             -0,
-             0,
-             -1.000010000100001,
-             -1,
-             0,
-             0,
-             -0.01000010000100001,
-             0 ];
-
 exports.process = function(arState, gState, frame) {
     arState.counter = arState.counter + 1;
     var coord = frame.getCoordinateSystem(window.XRCoordinateSystem.HEAD_MODEL);
@@ -108,7 +91,6 @@ exports.process = function(arState, gState, frame) {
     var pose = frame.getDisplayPose(coord);
     var view = frame.views && (frame.views.length > 0) && frame.views[0];
     if (view && pose) {
-//        view.setProjectionMatrix(HACK); // TO DELETE
         arState.poseModelMatrix = pose.poseModelMatrix;
         arState.projectionMatrix = view.projectionMatrix;
         arState.viewMatrix = pose.getViewMatrix(view);
