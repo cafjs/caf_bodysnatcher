@@ -28,7 +28,7 @@ var TORUS_TUBE_DIAMETER= 0.015;
 
 exports.init = function(ctx, data) {
 
-    var renderer = new THREE.WebGLRenderer({antialias:true});
+    var renderer = new THREE.WebGLRenderer();
     renderer.setSize(IMAGE_WIDTH, IMAGE_HEIGHT);
     renderer.setClearColor(0x000000);// Configure renderer clear color
     document.body.appendChild(renderer.domElement);

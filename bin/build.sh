@@ -1,32 +1,29 @@
 #!/bin/bash
 #build app
-echo "browserify  -d public/js/main.js -o public/js/build.js"
-browserify  -d public/js/main.js -o public/js/build.js
-echo "browserify public/js/main.js | uglifyjs > public/js/build.min.js"
+pushd public
+echo "browserify  -d js/main.js -o js/build.js"
+browserify  -d js/main.js -o js/build.js
+echo "browserify js/main.js | uglifyjs > js/build.min.js"
 export NODE_ENV=production
-browserify public/js/main.js | uglifyjs > public/js/build.min.js
+browserify js/main.js | uglifyjs > js/build.min.js
+unset NODE_ENV
+popd
 
 #build iot
 pushd iot
-if test -f all.tgz; then
-    tar xvf all.tgz
-fi
-rm -f *.tgz
-rm -f npm-shrinkwrap.json
-npm install --production
-npm shrinkwrap
-npm pack
-cp *.tgz ../public/iot.tgz
+cafjs pack true . ./app.tgz &&  mv ./app.tgz ../public/iot.tgz
 popd
 
 #build vr
 pushd public/reactvr
-yarn install --check-files --production
-npm run bundle
+export  REACT_NATIVE_APP_ROOT=$PWD'/../../../../'
+[[ $PWD = '/usr/src/app'* ]] && export REACT_NATIVE_APP_ROOT=/usr/src
+
+cafjs build
+unset REACT_NATIVE_APP_ROOT
 popd
 
-#build wear
+#build webar
 pushd public/webar
-npm install
-npm run build
+cafjs build
 popd

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-"use strict";
+'use strict';
 
 var myUtils = require('caf_iot').caf_components.myUtils;
 
@@ -33,7 +33,7 @@ exports.setup = function(self, cb) {
 };
 
 var toDeviceInfo = function(self) {
-    var all =  self.scratch.devices || {};
+    var all = self.scratch.devices || {};
     var result = {};
     Object.keys(all).forEach(function(x) {
         var ad = myUtils.deepClone(all[x].advertisement);
@@ -52,7 +52,7 @@ var filterActive = function(deviceInfo) {
         if (value && value.serviceData && (value.serviceData.length >=1) &&
             value.serviceData[0].data) {
             result[x] = deviceInfo[x];
-        };
+        }
     });
     return result;
 };
@@ -61,7 +61,7 @@ var diffDevices = function(active, markers, processing) {
     var result = {add: [], delete: []};
     // added
     Object.keys(markers).forEach(function(x) {
-        if (!active[x] && (!processing[x]  || processing[x].isDelete)) {
+        if (!active[x] && (!processing[x] || processing[x].isDelete)) {
             result.add.push(x);
             processing[x] = {counter: PROCESSING_TICKS, isDelete: false};
         }

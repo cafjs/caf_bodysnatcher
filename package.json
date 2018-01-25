@@ -1,16 +1,16 @@
 {
     "name": "caf_bodysnatcher",
     "description": "Cloud Assistants with React basic example",
-    "version": "0.2.21",
+    "version": "0.3.0",
     "author": "Antonio Lain <antlai@cafjs.com>",
     "dependencies": {
-        "caf_react" :"^0.2.0",
-        "caf_core": "^0.2.0",
-        "caf_transport" : "^0.2.0",
-        "caf_cli": "^0.2.0",
-        "caf_iot": "^0.2.0",
+        "caf_react" :"^0.3.0",
+        "caf_core": "^0.3.0",
+        "caf_transport" : "^0.3.0",
+        "caf_cli": "^0.3.0",
+        "caf_iot": "^0.3.0",
         "minimist" : "^1.2.0",
-        "three": "^0.86.0",
+        "three": "^0.88.0",
         "react" : "^0.14.0",
         "react-dom" : "^0.14.0",
         "react-bootstrap" : "^0.28.1",
@@ -19,12 +19,12 @@
         "object-assign" : "^4.1.0"
     },
     "devDependencies": {
-        "caf_dcinabox" :"^0.2.0",
-        "caf_srp" : "^0.2.0",
+        "caf_dcinabox" :"^0.3.0",
+        "caf_srp" : "^0.3.0",
         "nodeunit" : ">=0.9",
         "browserify" : "^13.0.0",
-        "uglify-js" : "^2.4.0",
-        "espruino" : "^0.0.34"
+        "espruino" : "^0.0.34",
+        "uglify-es" : "^3.3.8"
     },
     "scripts": {
        "start" : "node ./index.js",
@@ -32,5 +32,5 @@
         "build": "./bin/build.sh"
     },
     "main": "index",
-    "engines": { "node": ">= 0.10.29" }
+    "engines": { "node": ">= 8.0.0" }
 }

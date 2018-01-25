@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-"use strict";
+'use strict';
 var caf_iot = require('caf_iot');
 var myUtils = caf_iot.caf_components.myUtils;
 var json_rpc = caf_iot.caf_transport.json_rpc;
@@ -47,7 +47,7 @@ var isManagerBLE = function(self) {
 };
 
 var methods = exports.methods = {
-    '__iot_setup__' : function(cb) {
+    '__iot_setup__': function(cb) {
         if (isManagerBLE(this)) {
             iot_methods_ble.setup(this, cb);
         } else {
@@ -58,7 +58,7 @@ var methods = exports.methods = {
         }
     },
 
-    '__iot_loop__' : function(cb) {
+    '__iot_loop__': function(cb) {
         var now = (new Date()).getTime();
         this.$.log && this.$.log.debug(now + ' loop:' + this.state.index);
         this.$.log && this.$.log.debug('Time offset ' +
@@ -76,7 +76,7 @@ var methods = exports.methods = {
             var parts = this.toCloud.get('parts');
             if (myUtils.deepEqual(parts, this.state.lastParts)) {
                 this.toCloud.set('parts', {});
-                this.state.lastParts =  {};
+                this.state.lastParts = {};
             } else {
                 this.state.lastParts = parts;
             }
