@@ -222,6 +222,7 @@ var sanityCheck = function(arState, p3D, actualP2D, sizeChess, frame) {
             .transpose();
     var view = nj.array(arState.viewMatrix, 'float32').reshape(4, 4)
             .transpose();
+    console.log('view: ' + JSON.stringify(view.tolist()));
     var proj = nj.array(arState.projectionMatrix, 'float32').reshape(4, 4)
             .transpose();
     var all =  nj.dot(proj, nj.dot(view, coordMap));
@@ -252,12 +253,12 @@ var sanityCheck = function(arState, p3D, actualP2D, sizeChess, frame) {
 //    console.log(JSON.stringify(orig.subtract(nj.array(backProj, 'float32'))
 //                               .tolist()));
 
-//    var points = cv.matFromArray(sizeChess.width*sizeChess.height, 1,
-//                                 cv.CV_32FC2,
-//                                 Array.prototype.concat.apply([], backProj));
-//    cv.drawChessboardCorners(frame.img, sizeChess, points, true);
+    var points = cv.matFromArray(sizeChess.width*sizeChess.height, 1,
+                                 cv.CV_32FC2,
+                                 Array.prototype.concat.apply([], backProj));
+    cv.drawChessboardCorners(frame.img, sizeChess, points, true);
+    points.delete();
 
-//    points.delete();
     return avgError;
 };
 
@@ -315,14 +316,15 @@ exports.process = function(arState, gState, frame) {
                 var inliers = new cv.Mat(nPoints, 1, cv.CV_32S);
                 var empty = cv.Mat.zeros(4, 1, cv.CV_64F);
                 var found = cv.solvePnPRansac(p3DMat, p2DMat, cameraMatrix,
-                                              empty, rVec, tVec, false, 1000,
+                                              empty, rVec, tVec, false, 200,
                                               3.0, 0.99, inliers,
-                                              cv.SOLVEPNP_ITERATIVE);
+                                              cv.SOLVEPNP_EPNP);
                 console.log(found);
-                console.log(points);
-                console.log(p2DMat.data32F);
-                console.log('rotation: ' + rVec.data64F);
-                console.log('translation: ' + tVec.data64F);
+                //console.log(JSON.stringify(p3DMat.data32F));
+                //console.log(JSON.stringify(p2DMat.data32F));
+                console.log(JSON.stringify(cameraMatrix.data64F));
+                console.log('rotation: ' + JSON.stringify(rVec.data64F));
+                console.log('translation: ' + JSON.stringify(tVec.data64F));
                 console.log('inliers: ' + JSON.stringify(inliers.size()));
 
                 var viewMatrix = openGLViewMat(rVec, tVec);
@@ -339,6 +341,10 @@ exports.process = function(arState, gState, frame) {
                     arState.tempCoord.push(newCoordMapping);
                     if (arState.nSnapshots === MAX_SNAP) {
                         arState.coordMapping = meanCoordMap(arState.tempCoord);
+                        var canvas = document.getElementById("canvasOutput");
+                        if (canvas) {
+                            canvas.style = "display:none";
+                        }
                         console.log(JSON.stringify(arState.tempCoord));
                         console.log(JSON.stringify(arState.coordMapping));
                     }
@@ -369,7 +375,7 @@ exports.process = function(arState, gState, frame) {
                 console.log('.');
             }
 
-//            cv.imshow("canvasOutput", dst);
+            cv.imshow("canvasOutput", dst); //delete
             dst.delete();
             points.delete();
         }
