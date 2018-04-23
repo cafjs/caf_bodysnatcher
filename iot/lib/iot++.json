@@ -15,7 +15,7 @@
                 {
                     "name": "log",
                     "env" : {
-                        "logLevel" : "TRACE"
+                        "logLevel" : "DEBUG"
                     }
                 },
                 {
@@ -44,7 +44,8 @@
                     "description": "Access to GATT services.",
                     "env" : {
                         "maxRetries" : "$._.env.maxRetries",
-                        "retryDelay" : "$._.env.retryDelay"
+                        "retryDelay" : "$._.env.retryDelay",
+                        "findCharactTimeout" : "process.env.FIND_CHARACT_TIMEOUT||4000"
                     },
                     "components" : [
                         {

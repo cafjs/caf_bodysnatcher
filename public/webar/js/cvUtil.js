@@ -61,12 +61,6 @@ var openGLViewMat = function(rot, trans) {
         .tolist();
 };
 
-var norm2 = function(x) {
-    var res = x.multiply(x).dot(nj.ones([x.shape[1],1]));
-    return res.reshape(res.size); // flat, one row
-};
-
-
 var computeCoordMap = function(poseMat, viewMat) {
 
     /*
@@ -85,6 +79,11 @@ var computeCoordMap = function(poseMat, viewMat) {
         .tolist();
 };
 
+var norm2 = function(x) {
+    var res = x.multiply(x).dot(nj.ones([x.shape[1],1]));
+    return res.reshape(res.size); // flat, one row
+};
+
 var meanCoordMap  = function(all) {
 
     var result = nj.zeros(16, 'float32');
@@ -93,6 +92,38 @@ var meanCoordMap  = function(all) {
         result = result.add(x);
     });
     return result.divide(all.length).tolist();
+};
+
+var stDev = function(all) {
+    return nj.array(all, 'float32')
+        .transpose()
+        .tolist()
+        .map(x => nj.array(x, 'float32').std())
+        .map(x => (x === 0 ? 0.00000001 : x));
+};
+
+var medianCoordMap = function(all) {
+    var allArray =  nj.array(all, 'float32');
+    return allArray
+        .transpose()
+        .tolist()
+        .map(x => x.sort())
+        .map(x => x[Math.floor(x.length/2)]);
+};
+
+var closestToMedian = function(all) {
+    var median = medianCoordMap(all);
+    var std = stDev(all);
+    var allOne = nj.zeros(all.length, 'float32').add(1).reshape(all.length, 1);
+    var medianRow = nj.array(median, 'float32').reshape(1, median.length);
+    var stdRow = nj.array(std, 'float32').reshape(1, std.length);
+    var allArray = nj.array(all, 'float32');
+    allArray = allArray.subtract(allOne.dot(medianRow));
+    allArray = allArray.divide(allOne.dot(stdRow)); //convert to z-score
+    var normError = norm2(allArray);
+    var minVal = nj.min(normError);
+    var minIndex = normError.tolist().findIndex(x => (x === minVal));
+    return all[minIndex];
 };
 
 /*
@@ -262,6 +293,18 @@ var sanityCheck = function(arState, p3D, actualP2D, sizeChess, frame) {
     return avgError;
 };
 
+
+var toggleVideo = exports.toggleVideo = function(isOn) {
+    var canvas = document.getElementById("canvasOutput");
+    if (canvas) {
+        canvas.style = (isOn ? "display:none" : "display:block");
+    }
+    var realities = document.getElementsByClassName("webxr-realities");
+    for (var i = 0; i< realities.length; i++) {
+        realities[i].style.display = (isOn ? "block" : "none");
+    };
+};
+
 exports.process = function(arState, gState, frame) {
 
     var counter = arState.counter;
@@ -336,15 +379,18 @@ exports.process = function(arState, gState, frame) {
 
                 var averageError = sanityCheck(arState, p3D, pointsArray,
                                                sizeChess, fr);
+
                 if (averageError < THRESHOLD_ERROR) {
                     arState.nSnapshots = arState.nSnapshots + 1;
+                    if (arState.nSnapshots === 1) {
+                        toggleVideo(false);
+                    }
                     arState.tempCoord.push(newCoordMapping);
                     if (arState.nSnapshots === MAX_SNAP) {
-                        arState.coordMapping = meanCoordMap(arState.tempCoord);
-                        var canvas = document.getElementById("canvasOutput");
-                        if (canvas) {
-                            canvas.style = "display:none";
-                        }
+                      //arState.coordMapping = meanCoordMap(arState.tempCoord);
+                        arState.coordMapping = closestToMedian(arState
+                                                               .tempCoord);
+                        toggleVideo(true);
                         console.log(JSON.stringify(arState.tempCoord));
                         console.log(JSON.stringify(arState.coordMapping));
                     }

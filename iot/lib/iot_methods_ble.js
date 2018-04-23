@@ -15,16 +15,14 @@ limitations under the License.
 */
 
 'use strict';
+var caf_iot = require('caf_iot');
+var myUtils = caf_iot.caf_components.myUtils;
+var bleUtil = require('./iot_ble_util');
 
-var myUtils = require('caf_iot').caf_components.myUtils;
+var MAX_RETRIES = 2;
+var TIME_BETWEEN_RETRIES = 150;
 
-/** Timeout to show up advertisement after activation (in loop invocations) */
-var PROCESSING_TICKS = 20;
 
-/*
- *  Helper methods to manage bluetooth devices.
- *
-*/
 exports.setup = function(self, cb) {
     self.scratch.devices = {};
     // {counter: number, isDelete: boolean}
@@ -32,104 +30,36 @@ exports.setup = function(self, cb) {
     cb(null);
 };
 
-var toDeviceInfo = function(self) {
-    var all = self.scratch.devices || {};
-    var result = {};
-    Object.keys(all).forEach(function(x) {
-        var ad = myUtils.deepClone(all[x].advertisement);
-        delete ad.serviceSolicitationUuids;
-        delete ad.solicitationServiceUuids;
-        delete ad.serviceUuids;
-        result[x] = {uuid: all[x].uuid, advertisement: ad};
-    });
-    return result;
-};
-
-var filterActive = function(deviceInfo) {
-    var result = {};
-    Object.keys(deviceInfo).forEach(function(x) {
-        var value = deviceInfo[x].advertisement;
-        if (value && value.serviceData && (value.serviceData.length >=1) &&
-            value.serviceData[0].data) {
-            result[x] = deviceInfo[x];
-        }
-    });
-    return result;
-};
-
-var diffDevices = function(active, markers, processing) {
-    var result = {add: [], delete: []};
-    // added
-    Object.keys(markers).forEach(function(x) {
-        if (!active[x] && (!processing[x] || processing[x].isDelete)) {
-            result.add.push(x);
-            processing[x] = {counter: PROCESSING_TICKS, isDelete: false};
-        }
-    });
-
-    // deleted after activation
-    Object.keys(active).forEach(function(x) {
-        if (!markers[x] && !(processing[x] && processing[x].isDelete)) {
-            result.delete.push(x);
-            processing[x] = {counter: PROCESSING_TICKS, isDelete: true};
-        }
-    });
-
-    // deleted before activation
-    Object.keys(processing).forEach(function(x) {
-        if (!markers[x] && !processing[x].isDelete) {
-            result.delete.push(x);
-            processing[x] = {counter: PROCESSING_TICKS, isDelete: true};
-        }
-    });
-
-    return result;
-};
-
-var decrementProcessing = function(processing) {
-    Object.keys(processing).forEach(function(x) {
-        var count = processing[x].counter;
-        count = count - 1;
-        if (count <= 0) {
-            delete processing[x];
-        } else {
-            processing[x] = {counter: count, isDelete: processing[x].isDelete};
-        }
-    });
-};
-
-var evalDiff = function(self, diff) {
-    diff.add.forEach(function(x) {
-        self.changeDeviceState(x, true);
-    });
-    diff.delete.forEach(function(x) {
-        self.changeDeviceState(x, false);
-    });
-};
-
 exports.loop = function(self, cb) {
-
-    var deviceInfo = toDeviceInfo(self);
-    var activeDeviceInfo = filterActive(deviceInfo);
+    var deviceInfo = bleUtil.toDeviceInfo(self);
+    var activeDeviceInfo = bleUtil.filterActive(deviceInfo);
     self.toCloud.set('deviceInfo', deviceInfo);
     // type of markers is {name:{location:{}, color: string, spinning: boolean}}
     var markers = self.fromCloud.get('markers') || {};
-    var diff = diffDevices(activeDeviceInfo, markers, self.scratch.processing);
-    decrementProcessing(self.scratch.processing);
-    evalDiff(self, diff);
-    if ((Object.keys(markers).length > 0) ||
-        (Object.keys(self.scratch.processing).length > 0)) {
-        self.findServices(cb);
-    } else {
-        cb(null);
-    }
+    var diff = bleUtil.diffDevices(activeDeviceInfo, markers,
+                                   self.scratch.processing,
+                                   self.scratch.devices);
+    bleUtil.decrementProcessing(self.scratch.processing);
+    bleUtil.evalDiff(self, diff, function(err) {
+        if (err) {
+            cb(err);
+        } else {
+            if ((Object.keys(markers).length > 0) ||
+                (Object.keys(self.scratch.processing).length > 0))  {
+                self.findServices(cb);
+            } else {
+                self.$.log && self.$.log.trace('Skipping findServices()');
+                cb(null);
+            }
+        }
+    });
 };
 
 
 exports.methods = {
     findServices: function(cb) {
         var now = (new Date()).getTime();
-        this.$.log && this.$.log.trace(now + ': findService()');
+        this.$.log && this.$.log.debug(now + ': findServices()');
         this.$.gatt.findServices(this.$.props.gattServiceID,
                                  '__iot_foundService__');
         cb(null);
@@ -152,22 +82,38 @@ exports.methods = {
         this.changeDeviceState(deviceName, 'hi', cb);
     },
 
-    changeDeviceState: function(deviceName, isStart, cb) {
-        this.$.log && this.$.log.debug('Change device ' + deviceName + ' to '
-                                       + isStart);
-        var device = this.scratch.devices[deviceName];
-        if (device) {
-            device.pending = {isStart: isStart};
-            this.$.gatt.findCharacteristics(this.$.props.gattServiceID,
-                                            device, '__iot_foundCharact__');
-        } else {
-            this.$.log && this.$.log.debug('changeDeviceState: Ignoring ' +
-                                           ' unknown device ' + deviceName);
-        }
-        cb && cb(null); // allow sync calls
+    /* `cmd` type is string or boolean, where string is for a custom command,
+     * and boolean is just to turn on/off the device.
+     */
+    changeDeviceState: function(deviceName, cmd, cb) {
+        var self = this;
+        myUtils.retryWithDelay(function(cb0) {
+            self.$.log && self.$.log.debug('Change device ' + deviceName +
+                                           ' to ' + cmd);
+            var device = self.scratch.devices[deviceName];
+
+            if (device) {
+                var handleChF = function(err, data) {
+                    if (err) {
+                        cb0(err);
+                    } else {
+                        var device = data.device;
+                        var chArray = data.characteristics;
+                        self.__iot_changeDeviceState__(device, chArray, cmd,
+                                                       cb0);
+                    }
+                };
+                self.$.gatt.findCharacteristics(self.$.props.gattServiceID,
+                                                device, handleChF);
+            } else {
+                self.$.log && self.$.log.debug('changeDeviceState: Ignoring ' +
+                                               ' unknown device ' + deviceName);
+                cb0(null);
+            }
+        }, MAX_RETRIES, TIME_BETWEEN_RETRIES, cb);
     },
 
-    __iot_foundCharact__: function(_service, device, chArray, cb) {
+    __iot_changeDeviceState__: function(device, chArray, cmd, cb) {
         var compare = function(x, y) {
             if (x.length < y.length) {
                 return compare(y, x);
@@ -176,6 +122,7 @@ exports.methods = {
                         (x === '0000' + y + '00001000800000805f9b34fb'));
             }
         };
+
         var self = this;
         chArray = chArray || [];
         this.$.log && this.$.log.trace('Found characteristics ' + chArray);
@@ -188,29 +135,22 @@ exports.methods = {
                                                x.uuid);
             }
         });
-        if (charact && device.pending) {
-            this.__iot_changeState__(device, charact, device.pending.isStart,
-                                     cb);
+
+        if (charact && ((typeof cmd === 'boolean') ||
+                        (typeof cmd === 'string'))) {
+            var buf = new Buffer(typeof cmd === 'string' ? cmd :
+                                 (cmd ? 'on' : 'off'));
+            if (typeof cmd === 'string') {
+                this.$.log && this.$.log.debug('Sending command ' + cmd);
+            } else {
+                this.$.log && this.$.log.debug('New state is ' +
+                                               (cmd ? 'on' : 'off'));
+            }
+            this.$.gatt.write(charact, buf);
         } else {
             this.$.log && this.$.log.debug('Ignore charact for device ' +
                                            device.uuid);
-            cb(null);
         }
-    },
-
-    __iot_changeState__: function(device, charact, isStart, cb) {
-        var buf = new Buffer(typeof isStart === 'string' ? isStart :
-                             (isStart ? 'on' : 'off'));
-        if (typeof isStart === 'string') {
-            this.$.log && this.$.log.debug('Sending command ' + isStart);
-        } else {
-            this.$.log && this.$.log.debug('New state is ' +
-                                           (isStart ? 'on' : 'off'));
-        }
-        this.$.gatt.write(charact, buf);
-        this.$.gatt.disconnect(device, 300);
-        delete device.pending;
-        cb(null);
+        this.$.gatt.disconnect(device, 100, cb);
     }
-
 };

@@ -73,8 +73,21 @@ var AppActions = {
         errorF(ctx.store, err);
     },
     arTouched: function(ctx, touched) {
-        updateF(ctx.store, {touched: touched});
-        touched && AppActions.sayHi(ctx, touched.__meta__.name);
+        if (touched) {
+            updateF(ctx.store, {
+                touched: touched,
+                sensorInfo: {
+                    color: touched.__meta__.color,
+                    name: touched.__meta__.name
+                }
+            });
+            AppActions.sayHi(ctx, touched.__meta__.name);
+        } else {
+            updateF(ctx.store, {touched: touched});
+        }
+    },
+    clearTouched: function(ctx) {
+        updateF(ctx.store, {touched: null, sensorInfo: null});
     }
 };
 

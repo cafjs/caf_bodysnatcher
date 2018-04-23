@@ -48,7 +48,7 @@
                     "name": "props",
                     "env" : {
                         "adminCA": "process.env.ADMIN_CA||admin",
-                        "margin" : "process.env.MARGIN||800"
+                        "margin" : "process.env.MARGIN||2000"
                     }
                 }
             ]

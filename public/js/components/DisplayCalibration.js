@@ -21,6 +21,10 @@ var DisplayCalibration = {
                     ),
                   cE(rB.ModalBody, null,
                      cE('p', null, this.props.calibration &&
+                        this.props.calibration.nInliers &&
+                        '#Inliers: ' + this.props.calibration.nInliers
+                       ),
+                     cE('p', null, this.props.calibration &&
                         this.props.calibration.points3D &&
                         'Points3D: ' +
                         JSON.stringify(this.props.calibration.points3D)

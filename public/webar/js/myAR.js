@@ -4,7 +4,6 @@ var arUtil = require('./arUtil');
 var cvUtil = require('./cvUtil');
 var threeUtil = require('./threeUtil');
 
-
 exports.init = function(ctx, data) {
     var state =  data || {};
     var arState = {};
@@ -49,11 +48,27 @@ exports.init = function(ctx, data) {
         if (state.touched) {
             var msg = document.getElementById('message');
             msg.innerHTML = state.touched.__meta__.name;
+            msg.style.color = state.touched.__meta__.color;
+        }
+
+        if (state.sensorInfo && state.sensorInfo.msg) {
+            var sensor = document.getElementById('sensor');
+            sensor.innerHTML = state.sensorInfo.msg;
+            sensor.style.color = state.sensorInfo.color;
+            sensor.style['border-width'] = '5px';
+        }
+
+        if (!state.touched && !state.sensorInfo) {
+            // cleanup
+            sensor = document.getElementById('sensor');
+            sensor.style['border-width'] = '0px';
+            sensor.innerHTML = '';
+            msg = document.getElementById('message');
+            msg.innerHTML = '';
         }
 
         arState.arSession && arState.arSession.requestFrame(animate);
     };
-
 
     arUtil.init(ctx, data, function(err, res) {
         if (err) {

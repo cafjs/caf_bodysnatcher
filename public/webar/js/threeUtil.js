@@ -172,6 +172,9 @@ exports.process = function(arState, gState, frame) {
             if (touched.length > 0) {
                 // Pick only the closest
                 AppActions.arTouched(arState.ctx, touched[0].object);
+            } else {
+                // touch anywhere else to remove sensor info
+                AppActions.clearTouched(arState.ctx);
             }
         }
 

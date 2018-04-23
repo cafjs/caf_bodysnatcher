@@ -23,7 +23,7 @@
         "caf_srp" : "^0.3.0",
         "nodeunit" : ">=0.9",
         "browserify" : "^13.0.0",
-        "espruino" : "^0.0.34",
+        "espruino" : "^0.1.6",
         "uglify-es" : "^3.3.8"
     },
     "scripts": {
