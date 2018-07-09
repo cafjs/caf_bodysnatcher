@@ -6,7 +6,7 @@
 # TO_RUN:
 #
 
-FROM registry.cafjs.com:32000/root-rpi2armhf
+FROM gcr.io/cafjs-k8/root-rpi2armhf
 
 ENTRYPOINT ["node"]
 

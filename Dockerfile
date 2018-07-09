@@ -2,8 +2,8 @@
 # DOCKER-VERSION  1.7.0
 # AUTHOR:         Antonio Lain <antlai@cafjs.com>
 # DESCRIPTION:    Cloud Assistants bodysnatcher management
-# TO_BUILD:       cafjs mkImage . registry.cafjs.com:32000/root-bodysnatcher
-# TO_RUN:         cafjs run --appImage registry.cafjs.com:32000/root-bodysnatcher bodysnatcher
+# TO_BUILD:       cafjs mkImage . gcr.io/cafjs-k8/root-bodysnatcher
+# TO_RUN:         cafjs run --appImage gcr.io/cafjs-k8/root-bodysnatcher bodysnatcher
 
 
 FROM node:8
