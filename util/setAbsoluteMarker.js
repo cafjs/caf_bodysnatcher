@@ -15,10 +15,12 @@ console.log(process.argv[2]);
 
 var isAdmin = (process.argv[2] == 'true');
 
+var SUFFIX=(argv.suffix ? argv.suffix : 'cafjs.com');
+
 var spec = {
     log: function(x) { console.error(x);},
     securityClient: srpClient,
-    accountsURL: 'https://root-accounts.cafjs.com',
+    accountsURL: 'https://root-accounts.' + SUFFIX,
     password: argv.password || 'cafjs',
     from: argv.from || 'demo-projector1',
     ca: argv.from || 'demo-projector1',
@@ -29,7 +31,7 @@ var spec = {
     unrestrictedToken: false
 };
 
-var URL = 'https://root-bodysnatcher.cafjs.com';
+var URL = 'https://root-bodysnatcher.' + SUFFIX;
 
 var s = new caf_cli.Session(URL, null, spec);
 

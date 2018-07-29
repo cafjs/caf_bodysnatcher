@@ -4,20 +4,52 @@ var AppActions = require('./actions/AppActions');
 
 var THREE = require('three');
 
-var raycaster = new THREE.Raycaster();
-var touch = new THREE.Vector2();
-
-
 // total diameter is 2*(TORUS_RADIOUS+TORUS_TUBE_DIAMETER)
-var TORUS_RADIUS = 0.025; // in meters
-var TORUS_TUBE_DIAMETER= 0.015;
-var ABSOLUTE_PART = -1;
-var MAX_CHANCES = 2;
-var SPEED = 0.03;
-var UPDATE_EVERY = 120;
+const TORUS_RADIUS = 0.025; // in meters
+const TORUS_TUBE_DIAMETER= 0.015;
+const ABSOLUTE_PART = -1;
+const MAX_CHANCES = 2;
+const SPEED = 0.03;
+const UPDATE_EVERY = 30;
+
+
+exports.init = async function(ctx, localState, data) {
+
+    var threeState = {};
+    var arSession = localState.ar.session;
+
+    threeState.renderer = new THREE.WebGLRenderer({
+        alpha: true,
+        preserveDrawingBuffer: true
+    });
+    threeState.renderer.autoClear = false;
+
+    threeState.gl = threeState.renderer.getContext();
+    await threeState.gl.setCompatibleXRDevice(arSession.device);
+
+    arSession.depthNear = 0.01;
+    arSession.depthFar = 1000;
+    arSession.baseLayer = new window.XRWebGLLayer(arSession, threeState.gl);
+
+    var group = new THREE.Group();
+    var light = new THREE.DirectionalLight(0xFFFFFF, 1.5);
+    group.add(light);
+    var light2 = new THREE.AmbientLight(0xFFFFFF, 0.7);
+    group.add(light2);
+    group.visible = true;
+    group.matrixAutoUpdate = false;
+    threeState.group = group;
+
+    threeState.camera = new THREE.PerspectiveCamera();
+    threeState.camera.matrixAutoUpdate = false;
+
+    localState.three = threeState;
+    console.log('threeUtil init done');
+    return threeState;
+};
+
 
 var syncDonuts = function(group, markers) {
-
     var newDonut = function(name, spinning, color, location) {
         var geometry = new THREE.TorusGeometry(TORUS_RADIUS,
                                                TORUS_TUBE_DIAMETER, 16, 64);
@@ -89,26 +121,57 @@ var updatePosition = function(group, parts) {
     });
 };
 
-var update = exports.update = function(arState, gState) {
-    var group = arState.group;
+var update = exports.update = function(localState, gState) {
+    var threeState = localState.three;
+    var group = threeState.group;
     try {
         gState.markers && group && syncDonuts(group, gState.markers);
         group && updatePosition(group, gState.parts || {});
     } catch(err) {
         console.log(err);
     }
-    return arState;
+    return localState;
 };
 
-exports.process = function(arState, gState, frame) {
+exports.process = function(localState, gState, frame) {
+    var arState = localState.ar;
+    var cvState = localState.cv;
+    var threeState = localState.three;
 
-    var renderer = arState.renderer;
-    var camera = arState.camera;
-    var session = arState.arSession;
-    var scene = new THREE.Scene();
-    var coordMapping = arState.coordMapping;
-    var group = arState.group;
+    var pose = frame.getDevicePose(arState.frameOfRef);
+    var session = frame.session;
+    var renderer = threeState.renderer;
+    var camera = threeState.camera;
+    var group = threeState.group;
+    var gl = threeState.gl;
     var counter = arState.counter;
+    var coordMapping = cvState.coordMapping;
+
+
+    var scene = new THREE.Scene();
+
+    var handleTouch = () => {
+        var touch = new THREE.Vector2();
+        var raycaster = new THREE.Raycaster();
+
+        if (localState.touch) {
+            touch.x = localState.touch.x;
+            touch.y = localState.touch.y;
+
+            raycaster.setFromCamera(touch, camera);
+
+            var all = group.children.filter(obj => (obj instanceof THREE.Mesh));
+            var touched = raycaster.intersectObjects(all);
+            if (touched.length > 0) {
+                // Pick only the closest
+                AppActions.arTouched(localState.ctx, touched[0].object);
+            } else {
+                // touch anywhere else to remove sensor info
+                AppActions.clearTouched(localState.ctx);
+            }
+        }
+    };
+
 
     // add  donuts to 'group' here
     if (group && group.visible) {
@@ -120,71 +183,35 @@ exports.process = function(arState, gState, frame) {
         });
 
         if (counter % UPDATE_EVERY === 0) {
-            update(arState, gState);
+            update(localState, gState);
         }
     }
     // end update donuts
 
-    renderer.autoClear = false;
-    renderer.setSize(session.baseLayer.framebufferWidth,
-                     session.baseLayer.framebufferHeight, false);
-    renderer.clear();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, session.baseLayer.framebuffer);
 
-
-    var view = frame.views && ( frame.views.length > 0) && frame.views[0];
-
-    if (view && coordMapping) {
-        var coord = frame.getCoordinateSystem(window
-                                              .XRCoordinateSystem.HEAD_MODEL);
-        // TBD: Will change to 'Device'  in final WebXR spec
-        var pose = frame.getDisplayPose(coord);
-
-        camera.matrixAutoUpdate = false;
-        camera.projectionMatrix.fromArray(view.projectionMatrix);
-        camera.matrix.fromArray(pose.poseModelMatrix);
-        camera.updateMatrixWorld(true);
-
-        scene.add(camera);
-
-        // group maps from external global coordinates to current global coords.
-        group.matrixAutoUpdate = false;
-        group.matrix.fromArray(coordMapping);
-        group.updateMatrixWorld(true);
-
-        scene.add(group);
-
-        renderer.clearDepth();
-        var viewport = view.getViewport(session.baseLayer);
-        renderer.setViewport(viewport.x, viewport.y, viewport.width,
-                             viewport.height);
-
-        if (arState.touch) {
-            touch.x = arState.touch.x;
-            touch.y = arState.touch.y;
-
-            raycaster.setFromCamera(touch, camera);
-
-            var touched = raycaster
-                    .intersectObjects(group.children
-                                      .filter(obj =>
-                                              (obj instanceof THREE.Mesh))
-                                     );
-            if (touched.length > 0) {
-                // Pick only the closest
-                AppActions.arTouched(arState.ctx, touched[0].object);
-            } else {
-                // touch anywhere else to remove sensor info
-                AppActions.clearTouched(arState.ctx);
+    if (pose) {
+        for (let view of frame.views) {
+            const viewport = session.baseLayer.getViewport(view);
+            renderer.setSize(viewport.width, viewport.height);
+            camera.projectionMatrix.fromArray(view.projectionMatrix);
+            const viewMatrix = new THREE.Matrix4()
+                      .fromArray(pose.getViewMatrix(view));
+            camera.matrix.getInverse(viewMatrix);
+            camera.updateMatrixWorld(true);
+            if (coordMapping) {
+                scene.add(camera);
+                /* Group maps from external global coordinates to current
+                 * global coords.*/
+                group.matrix.fromArray(coordMapping);
+                group.updateMatrixWorld(true);
+                scene.add(group);
             }
-        }
-
-        renderer.render(scene, camera);
-    } else {
-        // Manage console log ...
-        if (counter % UPDATE_EVERY === 0) {
-            console.log('Error: no view or mapping, skipping rendering');
+            renderer.clearDepth();
+            coordMapping && handleTouch();
+            renderer.render(scene, camera);
         }
     }
 
-    delete arState.touch; // only process once (or ignore...)
+    delete localState.touch; // only process once (or ignore...)
 };

@@ -7,9 +7,14 @@ var myUtils = caf_comp.myUtils;
 var caf_cli = caf_core.caf_cli;
 var srpClient = require('caf_srp').client;
 var parseArgs = require('minimist');
-var argv = parseArgs(process.argv.slice(2));
+var argv = parseArgs(process.argv.slice(2), {
+    number: ['x', 'y', 'z']
+});
 
 var ABSOLUTE_PART = -1;
+
+//var SUFFIX='192.168.1.15.xip.io:8080';
+var SUFFIX=(argv.suffix ? argv.suffix : 'vcap.me:8080');
 
 console.log(process.argv[2]);
 
@@ -18,7 +23,7 @@ var isAdmin = (process.argv[2] == 'true');
 var spec = {
     log: function(x) { console.error(x);},
     securityClient: srpClient,
-    accountsURL: 'http://root-accounts.192.168.1.15.xip.io:8080',
+    accountsURL: 'http://root-accounts.' + SUFFIX,
     password: argv.password || 'pleasechange',
     from: argv.from || 'foo-projector1',
     ca: argv.from || 'foo-projector1',
@@ -29,13 +34,14 @@ var spec = {
     unrestrictedToken: false
 };
 
-var URL = 'http://root-bodysnatcher.192.168.1.15.xip.io:8080';
+var URL = 'http://root-bodysnatcher.' + SUFFIX;
 
 var s = new caf_cli.Session(URL, null, spec);
 
 var x = (argv.x && parseFloat(argv.x)) || 0.0;
 var y = (argv.y && parseFloat(argv.y)) || 0.0;
 var z = (argv.z && parseFloat(argv.z)) || 0.0;
+console.log('x:' + x + ' y:' + y + ' z:' + z);
 
 s.onopen = function() {
     s.setMarker(argv.name || 'device1',

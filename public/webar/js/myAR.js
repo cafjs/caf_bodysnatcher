@@ -4,13 +4,12 @@ var arUtil = require('./arUtil');
 var cvUtil = require('./cvUtil');
 var threeUtil = require('./threeUtil');
 
-exports.init = function(ctx, data) {
+exports.init = async function(ctx, data) {
     var state =  data || {};
-    var arState = {};
+    var localState = {};
     var unsubscribe = null;
 
     var that = {
-
         mount: function() {
             if (!unsubscribe) {
                 unsubscribe = ctx.store.subscribe(that.onChange);
@@ -30,65 +29,67 @@ exports.init = function(ctx, data) {
             }
         },
         update: function() {
-            arState = arUtil.update(arState, state);
-            arState = cvUtil.update(arState, state);
-            arState = threeUtil.update(arState, state);
+            arUtil.update(localState, state);
+            cvUtil.update(localState, state);
+            threeUtil.update(localState, state);
         }
     };
 
-    // TBD: Will add a timestamp before frame in final WebXR spec
-    var animate = function(frame) {
-        // get 6DoF camera position/rotation
-        arUtil.process(arState, state, frame);
-        // read & analyze input frame to find global coordinates
-        cvUtil.process(arState, state, frame);
-        // draw 3-D donuts overlay
-        threeUtil.process(arState, state, frame);
 
+    var update2D = function() {
         if (state.touched) {
             var msg = document.getElementById('message');
             msg.innerHTML = state.touched.__meta__.name;
-            msg.style.color = state.touched.__meta__.color;
+            msg.style = 'display:block;z-index:25;color:' +
+                state.touched.__meta__.color + ';';
+
         }
 
         if (state.sensorInfo && state.sensorInfo.msg) {
             var sensor = document.getElementById('sensor');
             sensor.innerHTML = state.sensorInfo.msg;
-            sensor.style.color = state.sensorInfo.color;
-            sensor.style['border-width'] = '5px';
+            sensor.style = 'display:block;z-index:25;border-width:5px;color:' +
+                state.sensorInfo.color + ';';
         }
 
         if (!state.touched && !state.sensorInfo) {
             // cleanup
             sensor = document.getElementById('sensor');
-            sensor.style['border-width'] = '0px';
             sensor.innerHTML = '';
+            sensor.style = 'display:none';
             msg = document.getElementById('message');
             msg.innerHTML = '';
+            msg.style = 'display:none';
         }
-
-        arState.arSession && arState.arSession.requestFrame(animate);
     };
 
-    arUtil.init(ctx, data, function(err, res) {
-        if (err) {
-            console.log(err);
-            throw err;
-        } else {
-            arState = res;
-            that.mount();
-            var el = document.getElementById('target');
-            el.addEventListener('touchstart', function(ev) {
-                if (ev.touches && ev.touches.length > 0) {
-                    var point = {
-                        x : 2*(ev.touches[0].clientX / window.innerWidth) -1,
-                        y: 1 - 2*(ev.touches[0].clientY / window.innerHeight)
-                    };
-                    arState.touch = point;
-                }
-            }, false);
-            arState.arSession && arState.arSession.requestFrame(animate);
-            ctx.ar = that;
+    var animate = function(time, frame) {
+        // render 3D, do it first to capture the video input
+        threeUtil.process(localState, state, frame);
+        // get 6DoF camera position/rotation
+        arUtil.process(localState, state, frame);
+        // read & analyze input frame to find global coordinates
+        cvUtil.process(localState, state, frame);
+        update2D();
+        localState.ar.session.requestAnimationFrame(animate);
+    };
+
+    await arUtil.init(ctx, localState, data);
+    await cvUtil.init(ctx, localState, data);
+    await threeUtil.init(ctx, localState, data);
+
+    that.mount();
+    document.body.addEventListener('touchstart', function(ev) {
+        if (ev.touches && ev.touches.length > 0) {
+            var point = {
+                x : 2*(ev.touches[0].clientX / window.innerWidth) -1,
+                y: 1 - 2*(ev.touches[0].clientY / window.innerHeight)
+            };
+            localState.touch = point;
         }
-    });
+    }, false);
+
+    localState.ctx = ctx;
+    localState.ar.session.requestAnimationFrame(animate);
+    return that;
 };

@@ -42,37 +42,36 @@ var wsStatusF =  function(store, isClosed) {
 };
 
 var AppActions = {
-    initServer: function(ctx, initialData) {
+    initServer(ctx, initialData) {
         updateF(ctx.store, initialData);
     },
-    init: function(ctx, cb) {
-        var tok =  caf_cli.extractTokenFromURL(window.location.href);
-        ctx.session.hello(ctx.session.getCacheKey(), tok, function(err, data) {
-            if (err) {
-                errorF(ctx.store, err);
-            } else {
-                updateF(ctx.store, data);
-            }
-            cb(err, data);
-        });
+    async init(ctx) {
+        try {
+            var tok =  caf_cli.extractTokenFromURL(window.location.href);
+            var data = await ctx.session.hello(ctx.session.getCacheKey(), tok)
+                    .getPromise();
+            updateF(ctx.store, data);
+        } catch (err) {
+            errorF(ctx.store, err);
+        }
     },
-    message:  function(ctx, msg) {
+    message(ctx, msg) {
         notifyF(ctx.store, msg);
     },
-    closing:  function(ctx, err) {
+    closing(ctx, err) {
         console.log('Closing:' + JSON.stringify(err));
         wsStatusF(ctx.store, true);
     },
-    setLocalState: function(ctx, data) {
+    setLocalState(ctx, data) {
         updateF(ctx.store, data);
     },
-    resetError: function(ctx) {
+    resetError(ctx) {
         errorF(ctx.store, null);
     },
-    setError: function(ctx, err) {
+    setError(ctx, err) {
         errorF(ctx.store, err);
     },
-    arTouched: function(ctx, touched) {
+    arTouched(ctx, touched) {
         if (touched) {
             updateF(ctx.store, {
                 touched: touched,
@@ -86,26 +85,23 @@ var AppActions = {
             updateF(ctx.store, {touched: touched});
         }
     },
-    clearTouched: function(ctx) {
+    clearTouched(ctx) {
         updateF(ctx.store, {touched: null, sensorInfo: null});
     }
 };
 
-
 ['sayHi','getState'].forEach(function(x) {
-     AppActions[x] = function() {
-         var args = Array.prototype.slice.call(arguments);
-         var ctx = args.shift();
-         args.push(function(err, data) {
-             if (err) {
-                 errorF(ctx.store, err);
-             } else {
-                 updateF(ctx.store, data);
-             }
-         });
-         ctx.session[x].apply(ctx.session, args);
-     };
+    AppActions[x] = async function() {
+        try {
+            var args = Array.prototype.slice.call(arguments);
+            var ctx = args.shift();
+            var data = await ctx.session[x].apply(ctx.session, args)
+                    .getPromise();
+            updateF(ctx.store, data);
+        } catch (err) {
+            errorF(ctx.store, err);
+        }
+    };
 });
-
 
 module.exports = AppActions;

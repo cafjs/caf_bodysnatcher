@@ -1,100 +1,76 @@
 "use strict";
 
-var THREE = require('three');
+exports.init = async function(ctx, localState, data) {
+    var arState = {};
+    arState.counter = 0;
 
-exports.init = function(ctx, data, cb) {
-
-
-    /*
-     * Following webxr-polyfill/examples/common.js
-     *  https://github.com/mozilla/webxr-polyfill.git
-     */
-    var display = null;
-    var group = new THREE.Group();
-    var light = new THREE.DirectionalLight(0xFFFFFF, 1.5);
-    group.add(light);
-    var light2 = new THREE.AmbientLight(0xFFFFFF, 0.7);
-    group.add(light2);
-    group.visible = true;
-
-    var camera = new THREE.PerspectiveCamera(50, 1, 0.01, 1000); //to be changed
-
-    var canvas =  document.createElement('canvas');
-    var webglCtx = canvas.getContext('webgl');
-    var renderer = new THREE.WebGLRenderer({
-	canvas: canvas,
-	context: webglCtx,
-	antialias: false,
-	alpha: true
-    });
-
-    renderer.setPixelRatio(1);
-    renderer.autoClear = false;
-    renderer.setClearColor('#000', 0);
-    if (typeof navigator.XR === 'undefined') {
-	cb(new Error('No WebXR API found'));
-    } else {
-        var sessionParams = {exclusive: false,
-                             type: window.XRSession.AUGMENTATION};
-
-        // TBD: Will change to 'Devices' in final WebXR spec
-        navigator.XR.getDisplays().then(displays => {
-            displays.some(dis => {
-                if (dis.supportsSession(sessionParams)) {
-                    display = dis;
-                    return true;
-                } else {
-                    return false;
-                }
-            });
-
-            if (!display) {
-                cb(new Error('Cannot find display'));
-            } else {
-                 // TBD: Will add an output context in final WebXR spec
-                display.requestSession(sessionParams).then(session => {
-                    session.depthNear = 0.01;
-                    session.depthFar = 1000;
-                    session.baseLayer = new window.XRWebGLLayer(session,
-                                                                webglCtx);
-                    cb(null, {
-                        ctx: ctx,
-                        coordMapping: null,
-                        arSession: session,
-                        display: display,
-                        camera: camera,
-                        group:  group,
-                        renderer: renderer,
-                        canvas: canvas,
-                        webglCtx: webglCtx,
-                        counter: 0,
-                        nSnapshots: 0,
-                        tempCoord: []
+    var waitForClick = () => {
+        return new Promise((resolve, reject) => {
+            var btn = document.getElementById('enter-ar');
+            var onEnterAR = async function() {
+                console.log('clicked!');
+                try {
+                    document.body.webkitRequestFullscreen();
+                    arState.canvas = document.createElement('canvas');
+                    arState.canvas.setAttribute('id', 'webxr-canvas');
+                    arState.ctx = arState.canvas.getContext('xrpresent');
+                    arState.session =  await arState.device.requestSession({
+                        outputContext: arState.ctx,
+                        environmentIntegration: true
                     });
-                }).catch(err => cb(err));
-            }
-        }).catch(err => cb(err));
+                    arState.frameOfRef = await arState.session
+                        .requestFrameOfReference('eye-level');
 
+                    document.body.appendChild(arState.canvas);
 
+                    var canvasOutput = document.createElement('canvas');
+                    canvasOutput.width = '100%';
+                    canvasOutput.height = '100%';
+                    canvasOutput.style = 'display:none';
+                    canvasOutput.setAttribute('id', 'canvasOutput');
+                    canvasOutput.setAttribute('z-index', '20');
+                    document.body.appendChild(canvasOutput);
+
+                    btn.classList.remove('btn-enter');
+                    btn.classList.add('btn-done');
+                    resolve(arState);
+                } catch (err) {
+                    reject(err);
+                }
+            };
+            btn.addEventListener('click', onEnterAR, {once: true});
+        });
+    };
+
+    if (window && window.navigator.xr && window.XRSession) {
+        arState.device = await window.navigator.xr.requestDevice();
+        await waitForClick();
+        console.log('Done arUtil init');
+        localState.ar = arState;
+    } else {
+        throw new Error('Unsupported');
     }
-};
 
-exports.update = function(arState, gState) {
     return arState;
 };
 
+exports.update = function(localState, gState) {
+    return localState;
+};
 
-exports.process = function(arState, gState, frame) {
+exports.process = function(localState, gState, frame) {
+    var arState = localState.ar;
     arState.counter = arState.counter + 1;
-    var coord = frame.getCoordinateSystem(window.XRCoordinateSystem.HEAD_MODEL);
-    // TBD: Will change to 'Device'  in final WebXR spec
-    var pose = frame.getDisplayPose(coord);
-    var view = frame.views && (frame.views.length > 0) && frame.views[0];
-    if (view && pose) {
+    var pose = frame.getDevicePose(arState.frameOfRef);
+    if (pose) {
         arState.poseModelMatrix = pose.poseModelMatrix;
-        arState.projectionMatrix = view.projectionMatrix;
-        arState.viewMatrix = pose.getViewMatrix(view);
+        for (let view of frame.views) {
+            // pick the last view, assumed just one for AR...
+            arState.projectionMatrix = view.projectionMatrix;
+            arState.viewMatrix = pose.getViewMatrix(view);// ~poseModelMatrix^-1
+        }
     } else {
-         console.log('Error: no view or pose, skipping processing.');
+        // reuse the previous pose
+        console.log('.');
     }
 };

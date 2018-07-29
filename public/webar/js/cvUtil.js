@@ -1,14 +1,30 @@
 "use strict";
 
 var nj = require('numjs');
-var cv = require('../opencv');
+var arucoUtil = require('./arucoUtil');
 
 var UPDATE_EVERY = 30;
 
 var FAR_PLANE= 1000;
 var NEAR_PLANE= 0.01;
 var MAX_SNAP = 10;
-var THRESHOLD_ERROR = 10;
+var THRESHOLD_ERROR = 2.5;
+var SCALE_FACTOR = 4;
+var MINIMUM_GL_SIZE = 200;
+
+var cv = require('../opencv');
+var cvPromise = (function() {
+    return new Promise((resolve, reject) => {
+        cv.onRuntimeInitialized = () => {
+            console.log('Init cv OK');
+            resolve('Done');
+        };
+        cv.onAbort = (err) => {
+            reject(err);
+        };
+    });
+})();
+
 
 var gl2cvProjMat = function(projMat, width, height) {
 
@@ -170,86 +186,56 @@ var orderCorners = function(corners, size2D) {
 
 };
 
+var extractCameraFrame = function(localState) {
+    var threeState = localState.three;
+    var gl = threeState.gl;
+    var arState = localState.ar;
+    var session = arState.session;
 
-exports.update = function(arState, gState) {
-
-    return arState;
-};
+    gl.bindFramebuffer(gl.FRAMEBUFFER, session.baseLayer.framebuffer);
 
 
-
-
-var extractCameraFrame = function(arState) {
-/*
- * At this point there is no standard way to get hold of the camera frame
-* in webXR.
-*
-*   This is a hack that relies on digging on the webxr polyfill from
-* Mozilla.
-*
-* It does not work on ARKit, because it uses a Metal layer for the
-* frame.
-*/
-    var extractWebGL = function(gl) {
-        //webgl buffer is RGB, bottom to top, left to right
-        var result = {width: gl.drawingBufferWidth,
-                      height: gl.drawingBufferHeight};
-        var src = new cv.Mat(result.height, result.width, cv.CV_8UC4);
-        gl.pixelStorei(gl.PACK_ALIGNMENT, (src.step[0] & 3) ? 1 : 4);
-        if (src.step[0]/src.elemSize() !== result.width) {
-            throw new Error('Row padding not supported on webgl context');
-        }
-        gl.readPixels(0, 0, result.width, result.height,
-                      gl.RGBA, gl.UNSIGNED_BYTE, src.data);
-        var dst = new cv.Mat(result.height, result.width, cv.CV_8UC1);
-        cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
-        var flipDst = new cv.Mat(result.height, result.width, cv.CV_8UC1);
-        cv.flip(dst, flipDst, 0);
-        src.delete();
-        dst.delete();
-        result.img = flipDst;
-        return result;
-    };
-
-    var extractWebRTC = function(video) {
-        // canvas is RGBA, top to bottom, left to right
-        var result = {width: video.clientWidth,
-                      height: video.clientHeight};
-        var canv = document.createElement('canvas');
-        canv.width = video.clientWidth;
-        canv.height = video.clientHeight;
-        var ctx = canv.getContext('2d');
-        ctx.drawImage(video, 0, 0);
-        var src = new cv.Mat(result.height, result.width, cv.CV_8UC4);
-        var dst = new cv.Mat(result.height, result.width, cv.CV_8UC1);
-        src.data.set(ctx.getImageData(0, 0, result.width,
-                                      result.height).data);
-        cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
-        src.delete();
-        console.log('dst: size ' + JSON.stringify(result));
-        console.log(dst.matSize);
-        result.img = dst;
-        return result;
-
-    };
-
-    // TBD: not in webXR standard...
-    var reality = arState.arSession.reality;
-    if (reality._elContext) {
-        //Using ARCore
-        return extractWebGL(reality._elContext);
-    } else if (reality._videoEl) {
-        // Using WebRTC
-        return extractWebRTC(reality._videoEl);
-    } else {
-        console.log('Not supported reality (like ARKit)');
+    if (gl.drawingBufferWidth < MINIMUM_GL_SIZE) {
+        // not initialized yet
         return null;
     }
+
+    var result = {width: gl.drawingBufferWidth,
+                  height: gl.drawingBufferHeight};
+    var src = new cv.Mat(result.height, result.width, cv.CV_8UC4);
+    gl.pixelStorei(gl.PACK_ALIGNMENT, (src.step[0] & 3) ? 1 : 4);
+    if (src.step[0]/src.elemSize() !== result.width) {
+        throw new Error('Row padding not supported on webgl context');
+    }
+    gl.readPixels(0, 0, result.width, result.height,
+                  gl.RGBA, gl.UNSIGNED_BYTE, src.data);
+    var dst = new cv.Mat(result.height, result.width, cv.CV_8UC1);
+    cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY);
+    src.delete();
+
+    var flipDst = new cv.Mat(result.height, result.width, cv.CV_8UC1);
+    cv.flip(dst, flipDst, 0);
+    dst.delete();
+    result.img = flipDst;
+    console.log('dst: size ' + JSON.stringify(result));
+    console.log(flipDst.matSize);
+    var scaledHeight = Math.floor(result.height/SCALE_FACTOR);
+    var scaledWidth = Math.floor(result.width/SCALE_FACTOR);
+    if ((scaledHeight <  MINIMUM_GL_SIZE) || (scaledHeight < MINIMUM_GL_SIZE)) {
+        scaledHeight = result.height;
+        scaledWidth = result.width;
+    }
+    var scaledDst = new cv.Mat(scaledHeight, scaledWidth, cv.CV_8UC1);
+    cv.resize(flipDst, scaledDst, {height: scaledHeight, width: scaledWidth});
+    result.scaledImg = scaledDst;
+    return result;
 };
 
 
-var sanityCheck = function(arState, p3D, actualP2D, sizeChess, frame) {
-    var coordMap = nj.array(arState.coordMapping, 'float32').reshape(4, 4)
+var sanityCheck = function(coordMapping, localState, p3D, actualP2D, sizeChess,
+                           frame) {
+    var arState = localState.ar;
+    var coordMap = nj.array(coordMapping, 'float32').reshape(4, 4)
             .transpose();
     var view = nj.array(arState.viewMatrix, 'float32').reshape(4, 4)
             .transpose();
@@ -294,32 +280,64 @@ var sanityCheck = function(arState, p3D, actualP2D, sizeChess, frame) {
 };
 
 
-var toggleVideo = exports.toggleVideo = function(isOn) {
-    var canvas = document.getElementById("canvasOutput");
+var toggleVideo = exports.toggleVideo = function(isOn, id) {
+    var canvas = document.getElementById('canvasOutput');
+    var identifier = document.getElementById('identifier');
     if (canvas) {
-        canvas.style = (isOn ? "display:none" : "display:block");
+        canvas.style = (isOn ? 'display:none' : 'display:block');
     }
-    var realities = document.getElementsByClassName("webxr-realities");
-    for (var i = 0; i< realities.length; i++) {
-        realities[i].style.display = (isOn ? "block" : "none");
-    };
+    if (isOn) {
+        if (id) {
+            identifier.innerHTML = id;
+            identifier.style = 'display:block;z-index:1;';
+        }
+    } else {
+        identifier.style = 'display:none';
+    }
 };
 
-exports.process = function(arState, gState, frame) {
+var distance = function(x0, y0, x1, y1) {
+    var x = x0 - x1;
+    var y = y0 - y1;
+    return Math.sqrt(x*x + y*y);
+};
 
+exports.init = async function(ctx, localState, data) {
+    var cvState = {
+        nSnapshots: 0,
+        tempCoord: [],
+        coordMapping: null
+    };
+    toggleVideo(true);
+    await cvPromise;
+    localState.cv = cvState;
+    await arucoUtil.init(ctx, localState, data);
+    console.log('cvUtil init done');
+    return cvState;
+};
+
+exports.update = function(localState, gState) {
+    return localState;
+};
+
+exports.process = function(localState, gState, frame) {
+
+    var cvState = localState.cv;
+    var arState = localState.ar;
     var counter = arState.counter;
-    var coordMapping = arState.coordMapping;
+    var coordMapping = cvState.coordMapping;
 
-    arState.nSnapshots = (arState.nSnapshots||0);
+    cvState.nSnapshots = cvState.nSnapshots || 0;
 
     // Refresh browser to trigger calibration
-    if ((counter % UPDATE_EVERY === 0) && (arState.nSnapshots < MAX_SNAP) &&
+    if ((counter % UPDATE_EVERY === 0) && (cvState.nSnapshots < MAX_SNAP) &&
         (coordMapping === null) &&
         gState.calibration && Array.isArray(gState.calibration.points2D)) {
         var t1 = (new Date()).getTime();
-        var fr = extractCameraFrame(arState);
+        var fr = extractCameraFrame(localState);
         if (fr !== null) {
             var dst = fr.img;
+            var scaledDst = fr.scaledImg;
             var width = fr.width;
             var height = fr.height;
             console.log('Height: ' + height + ' Width: ' + width);
@@ -330,9 +348,13 @@ exports.process = function(arState, gState, frame) {
 
             var sizeChess = {width: size2D[1], height: size2D[0]};
 
-            var patternFound = cv.findChessboardCorners(dst, sizeChess, points);
-
+            var patternFound = cv.findChessboardCorners(scaledDst, sizeChess,
+                                                        points);
             if (patternFound) {
+                toggleVideo(false);
+                for (let i = 0; i < points.data32F.length; i++) {
+                    points.data32F[i] = SCALE_FACTOR * points.data32F[i];
+                }
                 cv.cornerSubPix(dst, points, {height: 11, width: 11},
                                 {height: -1, width: -1}, {
                                     type: cv.TermCriteria_EPS +
@@ -360,11 +382,11 @@ exports.process = function(arState, gState, frame) {
                 var empty = cv.Mat.zeros(4, 1, cv.CV_64F);
                 var found = cv.solvePnPRansac(p3DMat, p2DMat, cameraMatrix,
                                               empty, rVec, tVec, false, 200,
-                                              3.0, 0.99, inliers,
+                                              2.0, 0.99, inliers,
                                               cv.SOLVEPNP_EPNP);
                 console.log(found);
-                //console.log(JSON.stringify(p3DMat.data32F));
-                //console.log(JSON.stringify(p2DMat.data32F));
+//                console.log(JSON.stringify(p3DMat.data32F));
+//                console.log(JSON.stringify(p2DMat.data32F));
                 console.log(JSON.stringify(cameraMatrix.data64F));
                 console.log('rotation: ' + JSON.stringify(rVec.data64F));
                 console.log('translation: ' + JSON.stringify(tVec.data64F));
@@ -375,30 +397,36 @@ exports.process = function(arState, gState, frame) {
                 var newCoordMapping = computeCoordMap(arState.poseModelMatrix,
                                                        viewMatrix);
                 console.log(newCoordMapping);
-                arState.coordMapping = newCoordMapping;
 
-                var averageError = sanityCheck(arState, p3D, pointsArray,
-                                               sizeChess, fr);
+                var averageError = sanityCheck(newCoordMapping, localState, p3D,
+                                               pointsArray, sizeChess, fr);
+                var diag = distance(pointsArray[0], pointsArray[1],
+                                    pointsArray[2*nPoints-2],
+                                    pointsArray[2*nPoints-1]);
+                var relError = 100.0*averageError/diag;
+                console.log('Diag: ' + diag + ' relError: ' + relError);
 
-                if (averageError < THRESHOLD_ERROR) {
-                    arState.nSnapshots = arState.nSnapshots + 1;
-                    if (arState.nSnapshots === 1) {
+                if (relError < THRESHOLD_ERROR) {
+                    cvState.nSnapshots = cvState.nSnapshots + 1;
+                    if (cvState.nSnapshots === 1) {
                         toggleVideo(false);
                     }
-                    arState.tempCoord.push(newCoordMapping);
-                    if (arState.nSnapshots === MAX_SNAP) {
-                      //arState.coordMapping = meanCoordMap(arState.tempCoord);
-                        arState.coordMapping = closestToMedian(arState
+                    if (!cvState.id) {
+                        cvState.id = arucoUtil.findId(cv, dst, pointsArray,
+                                                      gState.calibration
+                                                      .dimAruco);
+                    }
+                    cvState.tempCoord.push(newCoordMapping);
+                    if (cvState.nSnapshots === MAX_SNAP) {
+                      //cvState.coordMapping = meanCoordMap(cvState.tempCoord);
+                        cvState.coordMapping = closestToMedian(cvState
                                                                .tempCoord);
-                        toggleVideo(true);
-                        console.log(JSON.stringify(arState.tempCoord));
-                        console.log(JSON.stringify(arState.coordMapping));
+                        toggleVideo(true, cvState.id);
+                        console.log(JSON.stringify(cvState.tempCoord));
+                        console.log(JSON.stringify(cvState.coordMapping));
                     }
                 } else {
                     console.log('Ignoring bad frame.');
-                }
-                if (arState.nSnapshots !== MAX_SNAP) {
-                    arState.coordMapping = null;
                 }
 /*
                 var result = {
@@ -421,8 +449,9 @@ exports.process = function(arState, gState, frame) {
                 console.log('.');
             }
 
-            cv.imshow("canvasOutput", dst); //delete
+            cv.imshow('canvasOutput', dst); //delete
             dst.delete();
+            scaledDst.delete();
             points.delete();
         }
         var t2 = (new Date()).getTime();

@@ -1,7 +1,7 @@
 {
     "name": "caf_bodysnatcher",
     "description": "Cloud Assistants with React basic example",
-    "version": "0.3.0",
+    "version": "0.3.1",
     "author": "Antonio Lain <antlai@cafjs.com>",
     "dependencies": {
         "caf_react" :"^0.3.0",
@@ -19,6 +19,7 @@
         "object-assign" : "^4.1.0"
     },
     "devDependencies": {
+        "pngjs" : "^3.3.3",
         "caf_dcinabox" :"^0.3.0",
         "caf_srp" : "^0.3.0",
         "nodeunit" : ">=0.9",
