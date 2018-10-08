@@ -15,13 +15,19 @@ cafjs pack true . ./app.tgz &&  mv ./app.tgz ../public/iot.tgz
 popd
 
 #build vr
-pushd public/reactvr
-export  REACT_NATIVE_APP_ROOT=$PWD'/../../../../'
-[[ $PWD = '/usr/src/app'* ]] && export REACT_NATIVE_APP_ROOT=/usr/src
-
+pushd public/vr
 cafjs build
-unset REACT_NATIVE_APP_ROOT
 popd
+
+
+
+#pushd public/reactvr
+#export  REACT_NATIVE_APP_ROOT=$PWD'/../../../../'
+#[[ $PWD = '/usr/src/app'* ]] && export REACT_NATIVE_APP_ROOT=/usr/src
+
+#cafjs build
+#unset REACT_NATIVE_APP_ROOT
+#popd
 
 #build webar
 pushd public/webar

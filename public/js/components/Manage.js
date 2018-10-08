@@ -38,7 +38,7 @@ var Manage = {
     doVR: function() {
         if (window && window.location && window.location.href) {
             var myURL = urlParser.parse(window.location.href);
-            myURL.pathname = '/reactvr/index.html';
+            myURL.pathname = '/vr/index.html';
             myURL.hash = myURL.hash.replace('session=default', 'session=vr');
             delete myURL.search; // delete cacheKey
             window.open(urlParser.format(myURL), '_blank');

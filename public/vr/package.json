@@ -1,0 +1,25 @@
+{
+    "name": "bodysnatcherVR",
+    "version": "0.3.0",
+    "private": true,
+    "scripts": {
+        "build": "./bin/build.sh"
+    },
+    "dependencies": {
+        "caf_cli": "^0.3.0",
+        "caf_transport": "^0.3.0",
+        "react": "^15.5.1",
+        "react-dom": "^15.5.1",
+        "redux" : "^3.5.0",
+        "aframe": "github:aframevr/aframe#d5bb456c9a2",
+        "aframe-react": "^4.4.0",
+        "aframe-material-collection": "^0.4.31",
+        "keymirror": "^0.1.0"
+
+    },
+    "devDependencies": {
+        "browserify" : "^13.0.0",
+        "browserify-shim": "^3.8.12",
+        "uglify-es" : "^3.3.8"
+    }
+}
