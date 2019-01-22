@@ -11,16 +11,28 @@ exports.init = async function(ctx, localState, data) {
                 console.log('clicked!');
                 try {
                     document.body.webkitRequestFullscreen();
+
+                    /* DO I NEED MIRRORING? */
                     arState.canvas = document.createElement('canvas');
                     arState.canvas.setAttribute('id', 'webxr-canvas');
                     arState.ctx = arState.canvas.getContext('xrpresent');
-                    arState.session =  await arState.device.requestSession({
-                        outputContext: arState.ctx,
-                        environmentIntegration: true
+
+                    var reqTarget = (navigator.xr.requestSession &&
+                                     navigator.xr) ||
+                            // TO DELETE WHEN CANARY UPGRADES
+                            arState.device;
+
+
+                    arState.session =  await reqTarget.requestSession({
+                        mode: 'immersive-ar',
+                        environmentIntegration: true,// TO DELETE WITH UPGRADE
+                        /* DO I NEED MIRRORING? */
+                        outputContext: arState.ctx
                     });
                     arState.frameOfRef = await arState.session
-                        .requestFrameOfReference('eye-level');
-
+                        .requestReferenceSpace({type: 'stationary',
+                                                subtype: 'eye-level'});
+                    /* DO I NEED MIRRORING? */
                     document.body.appendChild(arState.canvas);
 
                     var canvasOutput = document.createElement('canvas');
@@ -43,7 +55,11 @@ exports.init = async function(ctx, localState, data) {
     };
 
     if (window && window.navigator.xr && window.XRSession) {
-        arState.device = await window.navigator.xr.requestDevice();
+        // TO DELETE WHEN CANARY UPGRADES
+        if (window.navigator.xr.requestDevice) {
+            arState.device = await window.navigator.xr.requestDevice();
+        }
+
         await waitForClick();
         console.log('Done arUtil init');
         localState.ar = arState;
@@ -61,13 +77,21 @@ exports.update = function(localState, gState) {
 exports.process = function(localState, gState, frame) {
     var arState = localState.ar;
     arState.counter = arState.counter + 1;
-    var pose = frame.getDevicePose(arState.frameOfRef);
+                                               // TO DELETE WHEN CANARY UPGRADES
+    frame.getViewerPose =  frame.getViewerPose || frame.getDevicePose; //new API
+    var pose = frame.getViewerPose(arState.frameOfRef);
     if (pose) {
-        arState.poseModelMatrix = pose.poseModelMatrix;
+                                  // TO DELETE WHEN CANARY UPGRADES
+        arState.poseModelMatrix = pose.poseModelMatrix || pose.transform.matrix;
         for (let view of frame.views) {
             // pick the last view, assumed just one for AR...
             arState.projectionMatrix = view.projectionMatrix;
-            arState.viewMatrix = pose.getViewMatrix(view);// ~poseModelMatrix^-1
+            arState.viewMatrix = view.viewMatrix;// ~poseModelMatrix^-1
+            if (!arState.viewMatrix) { // TO DELETE WHEN CANARY UPGRADES
+                // old compatibility mode
+                arState.viewMatrix = pose.getViewMatrix &&
+                    pose.getViewMatrix(view);
+            }
         }
     } else {
         // reuse the previous pose

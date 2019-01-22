@@ -25,11 +25,17 @@ exports.init = async function(ctx, localState, data) {
     threeState.renderer.autoClear = false;
 
     threeState.gl = threeState.renderer.getContext();
-    await threeState.gl.setCompatibleXRDevice(arSession.device);
+    await threeState.gl.makeXRCompatible();
 
-    arSession.depthNear = 0.01;
-    arSession.depthFar = 1000;
-    arSession.baseLayer = new window.XRWebGLLayer(arSession, threeState.gl);
+    var baseLayer = new window.XRWebGLLayer(arSession, threeState.gl);
+    if (arSession.updateRenderState) {
+        arSession.updateRenderState({ baseLayer: baseLayer, depthNear: 0.01,
+                                      depthFar: 1000});
+    } else { // TO DELETE WHEN CANARY UPGRADES
+        arSession.depthNear = 0.01;
+        arSession.depthFar = 1000;
+        arSession.baseLayer = baseLayer;
+    }
 
     var group = new THREE.Group();
     var light = new THREE.DirectionalLight(0xFFFFFF, 1.5);
@@ -138,7 +144,10 @@ exports.process = function(localState, gState, frame) {
     var cvState = localState.cv;
     var threeState = localState.three;
 
-    var pose = frame.getDevicePose(arState.frameOfRef);
+    // TO DELETE WHEN CANARY UPGRADES
+    frame.getViewerPose =  frame.getViewerPose || frame.getDevicePose; //new API
+    var pose = frame.getViewerPose(arState.frameOfRef);
+
     var session = frame.session;
     var renderer = threeState.renderer;
     var camera = threeState.camera;
@@ -147,6 +156,8 @@ exports.process = function(localState, gState, frame) {
     var counter = arState.counter;
     var coordMapping = cvState.coordMapping;
 
+                    // TO DELETE WHEN CANARY UPGRADES
+    var baseLayer = session.baseLayer || session.renderState.baseLayer;
 
     var scene = new THREE.Scene();
 
@@ -188,11 +199,11 @@ exports.process = function(localState, gState, frame) {
     }
     // end update donuts
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, session.baseLayer.framebuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, baseLayer.framebuffer);
 
     if (pose) {
         for (let view of frame.views) {
-            const viewport = session.baseLayer.getViewport(view);
+            const viewport = baseLayer.getViewport(view);
             renderer.setSize(viewport.width, viewport.height);
             camera.projectionMatrix.fromArray(view.projectionMatrix);
             const viewMatrix = new THREE.Matrix4()

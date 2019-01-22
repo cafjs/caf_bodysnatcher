@@ -191,8 +191,10 @@ var extractCameraFrame = function(localState) {
     var gl = threeState.gl;
     var arState = localState.ar;
     var session = arState.session;
+                    // TO DELETE WHEN CANARY UPGRADES
+    var baseLayer = session.baseLayer || session.renderState.baseLayer;
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, session.baseLayer.framebuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, baseLayer.framebuffer);
 
 
     if (gl.drawingBufferWidth < MINIMUM_GL_SIZE) {
