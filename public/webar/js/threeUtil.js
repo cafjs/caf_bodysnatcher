@@ -202,12 +202,15 @@ exports.process = function(localState, gState, frame) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, baseLayer.framebuffer);
 
     if (pose) {
-        for (let view of frame.views) {
+        var views = frame.views || pose.views; // TO DELETE
+        for (let view of views) {
             const viewport = baseLayer.getViewport(view);
             renderer.setSize(viewport.width, viewport.height);
             camera.projectionMatrix.fromArray(view.projectionMatrix);
+//          const viewMatrix = new THREE.Matrix4()
+//                      .fromArray(pose.getViewMatrix(view));
             const viewMatrix = new THREE.Matrix4()
-                      .fromArray(pose.getViewMatrix(view));
+                        .fromArray(view.viewMatrix || pose.getViewMatrix(view));
             camera.matrix.getInverse(viewMatrix);
             camera.updateMatrixWorld(true);
             if (coordMapping) {

@@ -24,8 +24,9 @@ exports.init = async function(ctx, localState, data) {
 
 
                     arState.session =  await reqTarget.requestSession({
-                        mode: 'immersive-ar',
-                        environmentIntegration: true,// TO DELETE WITH UPGRADE
+                        //mode: 'immersive-ar',
+                        mode: 'legacy-inline-ar',
+                        //environmentIntegration: true,// TO DELETE WITH UPGRADE
                         /* DO I NEED MIRRORING? */
                         outputContext: arState.ctx
                     });
@@ -83,7 +84,8 @@ exports.process = function(localState, gState, frame) {
     if (pose) {
                                   // TO DELETE WHEN CANARY UPGRADES
         arState.poseModelMatrix = pose.poseModelMatrix || pose.transform.matrix;
-        for (let view of frame.views) {
+        var views = frame.views || pose.views; // TO DELETE
+        for (let view of views) {
             // pick the last view, assumed just one for AR...
             arState.projectionMatrix = view.projectionMatrix;
             arState.viewMatrix = view.viewMatrix;// ~poseModelMatrix^-1
