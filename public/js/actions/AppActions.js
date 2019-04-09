@@ -74,8 +74,9 @@ var AppActions = {
     }
 };
 
-['setMarker', 'deleteMarker', 'calibrate', 'showChess', 'activatePartsStream',
- 'setProjectorCA', 'getSnapshot', 'snapshot', 'getState', 'nodisplay']
+['setMarker', 'deleteMarker', 'calibrate', 'resetCalibration', 'showChess',
+ 'activatePartsStream', 'setProjectorCA', 'getSnapshot', 'snapshot', 'getState',
+ 'nodisplay']
     .forEach(function(x) {
         AppActions[x] = function() {
             var args = Array.prototype.slice.call(arguments);

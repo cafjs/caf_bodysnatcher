@@ -10,7 +10,8 @@ exports.init = async function(ctx, localState, data) {
             var onEnterAR = async function() {
                 console.log('clicked!');
                 try {
-                    document.body.webkitRequestFullscreen();
+                    document.body.requestFullscreen({navigationUI: 'hide'});
+                    //document.body.webkitRequestFullscreen();
 
                     /* DO I NEED MIRRORING? */
                     arState.canvas = document.createElement('canvas');
@@ -25,11 +26,12 @@ exports.init = async function(ctx, localState, data) {
 
                     arState.session =  await reqTarget.requestSession({
                         //mode: 'immersive-ar',
-                        mode: 'legacy-inline-ar',
+                        mode: 'legacy-inline-ar'//,
                         //environmentIntegration: true,// TO DELETE WITH UPGRADE
                         /* DO I NEED MIRRORING? */
-                        outputContext: arState.ctx
+//                        outputContext: arState.ctx
                     });
+
                     arState.frameOfRef = await arState.session
                         .requestReferenceSpace({type: 'stationary',
                                                 subtype: 'eye-level'});
@@ -88,7 +90,7 @@ exports.process = function(localState, gState, frame) {
         for (let view of views) {
             // pick the last view, assumed just one for AR...
             arState.projectionMatrix = view.projectionMatrix;
-            arState.viewMatrix = view.viewMatrix;// ~poseModelMatrix^-1
+            arState.viewMatrix = view.transform.inverse.matrix;// ~poseModelMatrix^-1
             if (!arState.viewMatrix) { // TO DELETE WHEN CANARY UPGRADES
                 // old compatibility mode
                 arState.viewMatrix = pose.getViewMatrix &&

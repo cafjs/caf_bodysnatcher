@@ -84,7 +84,7 @@ var methods = exports.methods = {
         }
     },
 
-    calibrate: function(cb) {
+    calibrate: function(nonce, cb) {
         var self = this;
         var calURL = this.$.props.baseURL + '/calibrate';
         var calOptions = this.$.props.calibrationOptions;
@@ -94,6 +94,7 @@ var methods = exports.methods = {
                 if (err) {
                     cb(err);
                 } else {
+                    value.nonce = nonce;
                     self.$.log && self.$.log.debug(value);
                     delete value.rotation; // redundant
                     delete value.translation;

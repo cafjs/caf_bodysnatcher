@@ -30,7 +30,8 @@ exports.init = async function(ctx, localState, data) {
     var baseLayer = new window.XRWebGLLayer(arSession, threeState.gl);
     if (arSession.updateRenderState) {
         arSession.updateRenderState({ baseLayer: baseLayer, depthNear: 0.01,
-                                      depthFar: 1000});
+                                      depthFar: 1000,
+                                      outputContext: localState.ar.ctx});
     } else { // TO DELETE WHEN CANARY UPGRADES
         arSession.depthNear = 0.01;
         arSession.depthFar = 1000;
@@ -209,8 +210,9 @@ exports.process = function(localState, gState, frame) {
             camera.projectionMatrix.fromArray(view.projectionMatrix);
 //          const viewMatrix = new THREE.Matrix4()
 //                      .fromArray(pose.getViewMatrix(view));
-            const viewMatrix = new THREE.Matrix4()
-                        .fromArray(view.viewMatrix || pose.getViewMatrix(view));
+            const viewMatrix = new THREE.Matrix4() // TO CLEANUP
+                      .fromArray(view.transform.inverse.matrix ||
+                                 pose.getViewMatrix(view));
             camera.matrix.getInverse(viewMatrix);
             camera.updateMatrixWorld(true);
             if (coordMapping) {

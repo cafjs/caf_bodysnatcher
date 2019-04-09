@@ -32,10 +32,7 @@ var gl2cvProjMat = function(projMat, width, height) {
 
     var fX = projMat[0] * width / 2;
     var fY = Math.abs(projMat[5]*height / 2);
-    var cX = (projMat[8] + 1) * width / 2;
-    /* TBD: Not clear to me whether Y-axis up in webgl implies:
-     *    var cY = (1 - projMat[9]) * height / 2;
-     */
+    var cX = (1- projMat[8]) * width / 2;
     var cY = (projMat[9] + 1) * height / 2;
 
     console.log('fX:' + fX + ' fY:' + fY + ' cX:' + cX + ' cY:' + cY);
@@ -47,8 +44,8 @@ var gl2cvProjMat = function(projMat, width, height) {
 
 var openGLProjMat = function(width, height, fX, fY, cX, cY, near, far) {
     return nj.array([
-        [2* fX / width, 0, 2 * (cX/width) - 1, 0],
-        [0, 2 * fY / height, 2*(cY/height) - 1, 0],
+        [2* fX / width, 0, 1 - 2 * (cX/width), 0],
+        [0, 2 * fY / height, 2*(cY/height) -1 , 0],
         [0, 0, -(far + near) / (far - near), -2 * far * near / (far - near)],
         [0, 0, -1, 0]
     ], 'float64')
@@ -57,14 +54,22 @@ var openGLProjMat = function(width, height, fX, fY, cX, cY, near, far) {
         .tolist();
 };
 
-var openGLViewMat = function(rot, trans) {
+var openGLViewMat = function(rot, trans, isReversedXZ) {
     var rotMat = new cv.Mat(3, 3, cv.CV_64F);
     cv.Rodrigues(rot, rotMat);
     var r = nj.array(rotMat.data64F, 'float64').reshape(3, 3);
     var t = nj.array(trans.data64F, 'float64').reshape(3, 1);
-    var flipAxis = nj.array([1, 0, 0,
-                             0, -1, 0,
-                             0, 0, -1], 'float64').reshape(3,3);
+    if (isReversedXZ) {
+        // rotate global coordinates, translation vector the same
+        var flipXZ = nj.array([-1, 0,  0,
+                               0,  1,  0,
+                               0,  0, -1], 'float64').reshape(3,3);
+        r = nj.dot(r, flipXZ);
+    }
+    var flipAxis = nj.array([1,  0,  0,
+                             0, -1,  0,
+                             0,  0, -1], 'float64').reshape(3,3);
+    // rotate destination coordinates, need to rotate translation vector
     r = nj.dot(flipAxis, r);
     t = nj.dot(flipAxis, t);
     var res = nj.concatenate(r, t);
@@ -242,6 +247,7 @@ var sanityCheck = function(coordMapping, localState, p3D, actualP2D, sizeChess,
     var view = nj.array(arState.viewMatrix, 'float32').reshape(4, 4)
             .transpose();
     console.log('view: ' + JSON.stringify(view.tolist()));
+
     var proj = nj.array(arState.projectionMatrix, 'float32').reshape(4, 4)
             .transpose();
     var all =  nj.dot(proj, nj.dot(view, coordMap));
@@ -302,6 +308,22 @@ var distance = function(x0, y0, x1, y1) {
     var x = x0 - x1;
     var y = y0 - y1;
     return Math.sqrt(x*x + y*y);
+};
+
+var reverseXZ = function(p3D) {
+    if ((p3D[3] -p3D[0]) < 0) {
+        console.log('Reversing XZ');
+        /*solvePNP needs a bit of help, better 180 rotate over Y axis, i.e.,
+         X' = -X and Z' = -Z, and undo the rotation later */
+        for (var i = 0; i< Math.floor(p3D.length/3); i++) {
+            p3D[3*i] = -p3D[3*i];
+            p3D[3*i+2] = -p3D[3*i+2];
+        }
+        return true;
+    } else {
+        return false;
+    }
+
 };
 
 exports.init = async function(ctx, localState, data) {
@@ -375,6 +397,8 @@ exports.process = function(localState, gState, frame) {
                                              pointsArray);
                 var p3D = Array.prototype.concat.apply([], gState.calibration
                                                        .points3D);
+                var p3DOriginal = p3D.slice(0);
+                var isReversedXZ  = reverseXZ(p3D);
                 var p3DMat = cv.matFromArray(nPoints, 1, cv.CV_32FC3, p3D);
 
                 // Find mapping
@@ -390,17 +414,20 @@ exports.process = function(localState, gState, frame) {
 //                console.log(JSON.stringify(p3DMat.data32F));
 //                console.log(JSON.stringify(p2DMat.data32F));
                 console.log(JSON.stringify(cameraMatrix.data64F));
+                console.log('isReversedXZ: ' + isReversedXZ);
                 console.log('rotation: ' + JSON.stringify(rVec.data64F));
                 console.log('translation: ' + JSON.stringify(tVec.data64F));
                 console.log('inliers: ' + JSON.stringify(inliers.size()));
 
-                var viewMatrix = openGLViewMat(rVec, tVec);
+                var viewMatrix = openGLViewMat(rVec, tVec, isReversedXZ);
+                console.log('viewMatrix: ' + JSON.stringify(viewMatrix));
 
                 var newCoordMapping = computeCoordMap(arState.poseModelMatrix,
                                                        viewMatrix);
                 console.log(newCoordMapping);
 
-                var averageError = sanityCheck(newCoordMapping, localState, p3D,
+                var averageError = sanityCheck(newCoordMapping, localState,
+                                               p3DOriginal,
                                                pointsArray, sizeChess, fr);
                 var diag = distance(pointsArray[0], pointsArray[1],
                                     pointsArray[2*nPoints-2],

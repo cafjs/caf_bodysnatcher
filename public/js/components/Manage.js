@@ -35,6 +35,10 @@ var Manage = {
         AppActions.setLocalState(this.props.ctx, {showCalibration: true});
     },
 
+    doResetCalibration: function() {
+         AppActions.resetCalibration(this.props.ctx);
+    },
+
     doVR: function() {
         if (window && window.location && window.location.href) {
             var myURL = urlParser.parse(window.location.href);
@@ -133,6 +137,10 @@ var Manage = {
                                           'primary'),
                                 onClick: this.doShowCalibration
                             }, "Show Calibration"),
+                            cE(rB.Button, {
+                                bsStyle: 'danger' ,
+                                onClick: this.doResetCalibration
+                            }, "Reset"),
                             cE(rB.Button, {
                                 bsStyle: 'info',
                                 onClick: this.doVR
