@@ -12,7 +12,7 @@
         "redux" : "^3.5.0",
         "keymirror": "^0.1.0",
         "three": "^0.88.0",
-        "numjs": "^0.15.1"
+        "numjs": "rborkhuis/numjs#56f417f"
     },
     "devDependencies": {
         "browserify" : "^13.0.0",
