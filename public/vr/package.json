@@ -11,7 +11,7 @@
         "react": "^15.5.1",
         "react-dom": "^15.5.1",
         "redux" : "^3.5.0",
-        "aframe": "1.0.0",
+        "aframe": "^1.0.0",
         "aframe-react": "^4.4.0",
         "aframe-material-collection": "^0.4.31",
         "@tweenjs/tween.js": "^17.2.0",
