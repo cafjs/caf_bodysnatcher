@@ -1,9 +1,9 @@
-# CAF (Cloud Assistant Framework)
+# Caf.js
 
 Co-design permanent, active, stateful, reliable cloud proxies with your web app.
 
-See http://www.cafjs.com
+See https://www.cafjs.com
 
-## CAF example integrating AR and VR
+## Caf.js example integrating AR and VR
 
 Example that combines AR and VR.
